@@ -36,7 +36,7 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v7
 
-      - name: Install pnpm
+      - name: Setup pnpm and node.js
         uses: pnpm/setup@v1
         with:
           runtime: node@24
