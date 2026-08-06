@@ -2,11 +2,11 @@ name: Beaver-Auth CI/CD Pipeline
 
 on:
   push:
-    branches: [main, master]
+    branches: [Main, master]
     tags:
       - 'v*'
   pull_request:
-    branches: [main, master]
+    branches: [Main, master]
 
 jobs:
   test-and-build:
