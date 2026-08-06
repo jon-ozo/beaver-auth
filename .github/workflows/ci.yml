@@ -46,7 +46,8 @@ jobs:
       - name: Build Core Package Only
         run: pnpm --filter @beaver-auth/core run build
 
+      - name: Authenticate with npm
+        run: pnpm config set //registry.npmjs.org/:_authToken=${{ secrets.BEAVER_AUTH_NPM_TOKEN }}
+
       - name: Publish Core Package Only
         run: pnpm --filter @beaver-auth/core publish --no-git-checks --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.beaver_auth_npm_token }}
