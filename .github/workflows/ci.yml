@@ -13,19 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup node.js
-        uses: actions/setup-node@v4
+      - name: Setup pnpm and node.js
+        uses: pnpm/setup@v1
         with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+          run_install: true
 
       - name: Run tests (Vitest)
         run: pnpm -r test
@@ -39,19 +32,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup node.js
-        uses: actions/setup-node@v4
+        uses: pnpm/setup@v1
         with:
-          node-version: 24
-          registry-url: 'https://npmjs.org'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+          run_install: true
 
       - name: Build Core Package Only
         run: pnpm --filter @beaver-auth/core run build
