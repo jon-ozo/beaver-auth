@@ -18,7 +18,9 @@ jobs:
       - name: Setup pnpm and node.js
         uses: pnpm/setup@v1
         with:
-          run_install: true
+          runtime: node@24
+          install: true
+          cache: true
 
       - name: Run tests (Vitest)
         run: pnpm -r test
@@ -37,7 +39,9 @@ jobs:
       - name: Install pnpm
         uses: pnpm/setup@v1
         with:
-          run_install: true
+          runtime: node@24
+          install: true
+          cache: true
 
       - name: Build Core Package Only
         run: pnpm --filter @beaver-auth/core run build
