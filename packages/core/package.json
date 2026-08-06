@@ -1,0 +1,41 @@
+{
+	"name": "@beaver-auth/core",
+	"version": "0.1.0",
+	"description": "Lightweight, type-safe authorization and authentication core engine.",
+	"type": "module",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs",
+			"default": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "tsup index.ts --format cjs,esm --dts --clean --splitting false",
+		"dev": "tsup index.ts --format cjs,esm --dts --watch"
+	},
+	"keywords": [
+		"auth",
+		"authentication",
+		"typescript",
+		"mfa",
+		"oauth"
+	],
+	"author": "Beaver Auth",
+	"license": "MIT",
+	"devDependencies": {
+		"@types/node": "^26.1.1",
+		"tsup": "^8.0.2",
+		"typescript": "^5.4.5"
+	}
+}

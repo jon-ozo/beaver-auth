@@ -1,0 +1,66 @@
+name: Beaver-Auth CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, master]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests (Vitest)
+        run: pnpm -r test
+
+      - name: Build core package only
+        run: pnpm --filter @beaver-auth/core run build
+
+  publish:
+    needs: test-and-build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Core Package Only
+        run: pnpm --filter @beaver-auth/core run build
+
+      - name: Publish Core Package Only
+        run: pnpm --filter @beaver-auth/core publish --no-git-checks --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.beaver_auth_npm_token }}

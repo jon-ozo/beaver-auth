@@ -1,0 +1,19 @@
+{
+	"name": "Beaver Auth Monorepo",
+	"version": "1.0.0",
+	"private": true,
+	"description": "Monorepo for the Beaver Auth ecosystem",
+	"scripts": {
+		"build": "pnpm --filter \"@beaver-auth/*\" run build",
+		"dev": "pnpm --filter \"@beaver-auth/*\" --parallel run dev",
+		"test": "vitest run",
+		"test:watch": "vitest"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"packageManager": "pnpm@11.18.0",
+	"devDependencies": {
+		"vitest": "^1.6.0"
+	}
+}
