@@ -20,6 +20,9 @@
 	"publishConfig": {
 		"access": "public"
 	},
+	"engines": {
+		"node": ">=20.0.0"
+	},
 	"scripts": {
 		"build": "tsup index.ts --format cjs,esm --dts --clean --splitting false",
 		"dev": "tsup index.ts --format cjs,esm --dts --watch"
