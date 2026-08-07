@@ -59,7 +59,7 @@ jobs:
           fi
           # We use pnpm config commands directly. This securely saves the registry and token perfectly.
           pnpm config set registry https://registry.npmjs.org/
-          pnpm config set //registry.npmjs.org/:_authToken="${BEAVER_AUTH_NPM_TOKEN}"
+          pnpm config set //registry.npmjs.org/:_authToken="${NPM_TOKEN}"
 
       - name: Verify npm auth
         run: |
