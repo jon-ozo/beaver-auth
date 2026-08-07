@@ -57,7 +57,6 @@ jobs:
           if [ -z "$NPM_TOKEN" ]; then
             echo "Error: BEAVER_AUTH_NPM_TOKEN is not set or empty"; exit 1
           fi
-          # We use pnpm config commands directly. This securely saves the registry and token perfectly.
           pnpm config set registry https://registry.npmjs.org/
           pnpm config set //registry.npmjs.org/:_authToken="${NPM_TOKEN}"
 
