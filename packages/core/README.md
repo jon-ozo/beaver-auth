@@ -6,13 +6,13 @@
 
 Build complete authentication systems — not authentication infrastructure.
 
-<p>
+<!-- <p>
 
 [![npm version](https://img.shields.io/npm/v/beaver-auth.svg)](https://www.npmjs.com/package/beaver-auth)
 [![License](https://img.shields.io/npm/l/beaver-auth.svg)](LICENSE)
 [![Downloads](https://img.shields.io/npm/dm/beaver-auth.svg)](https://www.npmjs.com/package/beaver-auth)
 
-</p>
+</p> -->
 
 </div>
 
