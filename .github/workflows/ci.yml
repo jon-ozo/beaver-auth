@@ -51,7 +51,22 @@ jobs:
         run: pnpm --filter @beaver-auth/core run build
 
       - name: Authenticate with npm
-        run: pnpm config set //registry.npmjs.org/:_authToken=${{ secrets.BEAVER_AUTH_NPM_TOKEN }}
+        env:
+          NPM_TOKEN: ${{ secrets.BEAVER_AUTH_NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "Error: BEAVER_AUTH_NPM_TOKEN is not set or empty"; exit 1
+          fi
+          # We use pnpm config commands directly. This securely saves the registry and token perfectly.
+          pnpm config set registry https://registry.npmjs.org/
+          pnpm config set //registry.npmjs.org/:_authToken="${BEAVER_AUTH_NPM_TOKEN}"
+
+      - name: Verify npm auth
+        run: |
+          pnpm whoami || (echo "Authentication verification failed — check BEAVER_AUTH_NPM_TOKEN value and permissions on npmjs.com"; exit 1)
+
+      - name: Dry-run publish
+        run: pnpm --filter @beaver-auth/core publish --dry-run --no-git-checks --access public
 
       - name: Publish Core Package Only
         run: pnpm --filter @beaver-auth/core publish --no-git-checks --access public
