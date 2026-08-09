@@ -1,344 +1,513 @@
-<div align="center">
-
 # Beaver-Auth
 
-### Framework-agnostic authentication and authorization for Node.js.
+### Production-grade authentication workflows without building the security architecture yourself.
 
-Build complete authentication systems — not authentication infrastructure.
+Beaver-Auth is a framework-agnostic authentication engine for JavaScript and Node.js applications.
 
-<!-- <p>
+It provides the security workflows that are difficult, repetitive, and easy to get subtly wrong—while leaving your application's architecture, database, framework, and infrastructure under your control.
 
-[![npm version](https://img.shields.io/npm/v/beaver-auth.svg)](https://www.npmjs.com/package/beaver-auth)
-[![License](https://img.shields.io/npm/l/beaver-auth.svg)](LICENSE)
-[![Downloads](https://img.shields.io/npm/dm/beaver-auth.svg)](https://www.npmjs.com/package/beaver-auth)
-
-</p> -->
-
-</div>
+**You bring the architecture. Beaver-Auth brings the authentication system.**
 
 ---
 
-## Authentication should be a feature.
+## The Problem
 
-Not six weeks of engineering.
+Authentication is rarely difficult because of `bcrypt.hash()` or creating a login endpoint.
 
-A production authentication system is far more than password hashing.
+The difficulty is everything around them.
 
-Every implementation eventually needs to coordinate:
+A production authentication system has to coordinate:
 
+- password handling
 - validation
-- password hashing
+- account enumeration protection
+- email verification
+- token lifecycle
 - sessions
-- verification
-- retries
-- transactions
-- role management
-- permissions
-- rate limiting
+- refresh tokens
 - multi-factor authentication
-- timing attack mitigation
-- user enumeration protection
-- token lifecycle management
-- error handling
+- rate limiting
+- account recovery
+- OAuth
+- retries and asynchronous work
+- database transactions
+- security-sensitive error handling
+- timing behavior
+- persistence boundaries
 
-Most projects rebuild this infrastructure from scratch.
+And these concerns don't exist independently.
 
-**Beaver-Auth gives you the complete workflow instead.**
+A seemingly simple registration flow can become:
+
+```text
+Validate
+   ↓
+Find existing account
+   ↓
+Protect against enumeration
+   ↓
+Hash credentials
+   ↓
+Create account
+   ↓
+Create verification token
+   ↓
+Dispatch verification workflow
+   ↓
+Handle retries
+   ↓
+Handle failures
+   ↓
+Maintain a consistent response
+```
+
+The problem isn't that developers can't implement these things.
+
+**The problem is that they shouldn't have to repeatedly design and maintain this security architecture for every application.**
 
 ---
 
-# One line is all it takes
+# What Beaver-Auth Does
+
+Beaver-Auth provides the authentication workflows while allowing your application to retain ownership of everything around them.
+
+```text
+┌─────────────────────────────────────────────┐
+│                 Your Application             │
+│                                             │
+│  Framework    Database    Infrastructure    │
+│     │             │              │           │
+│     └─────────────┼──────────────┘           │
+│                   │                          │
+│            Your Adapters / Hooks             │
+└───────────────────┼─────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────────┐
+│                 Beaver-Auth                 │
+│                                             │
+│  Registration   Login   Sessions   Tokens   │
+│  Verification   MFA     Recovery   OAuth   │
+│  Crypto         Validation   Rate Limits   │
+│  Security Workflows & Policies              │
+└─────────────────────────────────────────────┘
+```
+
+Beaver-Auth deliberately stops at the application boundary.
+
+It does **not** require you to adopt:
+
+- a particular web framework
+- a particular ORM
+- a particular database
+- a particular application architecture
+- a particular infrastructure provider
+
+Your application owns those decisions.
+
+Beaver-Auth owns the authentication workflows.
+
+---
+
+# Why This Is Different
+
+Framework agnosticism is useful, but it isn't the main value.
+
+Clean Architecture already gives applications a way to isolate framework-specific infrastructure.
+
+The harder problem is **implementing the security workflows correctly inside that architecture.**
+
+Beaver-Auth is designed to reduce that implementation burden.
+
+Instead of repeatedly building:
+
+```text
+Controller
+    ↓
+Validation
+    ↓
+Authentication policy
+    ↓
+Credential handling
+    ↓
+Token management
+    ↓
+Session management
+    ↓
+MFA
+    ↓
+Persistence
+    ↓
+Background work
+    ↓
+Security/error handling
+```
+
+you configure the boundaries and let Beaver-Auth execute the workflow.
+
+---
+
+# Your Architecture Stays Yours
+
+Beaver-Auth does not own your database model.
+
+It does not own your HTTP layer.
+
+It does not decide how your application is structured.
+
+Instead, it communicates with your application through explicit boundaries.
+
+For example:
+
+```ts
+const auth = new RegistrationEngine({
+	adapter: {
+		findUserByEmail,
+		createUser,
+		// ...
+	},
+
+	requireVerification: verification,
+})
+```
+
+Your persistence implementation remains yours.
+
+```ts
+const findUserByEmail = async (email: string) => {
+	return db.user.findUnique({
+		where: { email },
+	})
+}
+```
+
+If the application later moves from Prisma to Drizzle, the authentication workflow does not need to be redesigned.
+
+The adapter implementation changes.
+
+The authentication policy does not.
+
+That distinction is important.
+
+---
+
+# Start in Minutes
+
+Install Beaver-Auth:
+
+```bash
+npm install @beaver-auth/core
+```
+
+or
+
+```bash
+pnpm add @beaver-auth/core
+```
+
+or
+
+```bash
+yarn add @beaver-auth/core
+```
+
+Then choose how you want to initialize it.
+
+---
+
+### Direct imports
+
+Use the engines directly when you want explicit control over composition.
+
+```ts
+import { RegistrationEngine, LoginEngine } from 'beaver-auth'
+```
+
+### Factory API
+
+Use the factory when you want Beaver-Auth to provide the application-level composition for you.
 
 ```ts
 import { createAuth } from 'beaver-auth'
 
 const auth = createAuth({
-	adapter,
-	hooks,
+	// configuration
 })
+```
 
-await auth.register({
+Both approaches use the same underlying authentication capabilities.
+
+---
+
+# Registration
+
+A registration workflow can include account enumeration protection, credential hashing, persistence, verification-token creation, and asynchronous verification dispatch.
+
+```ts
+const result = await registration.execute({
 	email,
 	password,
 	profile,
 })
 ```
 
-That's all you write.
+The engine owns the workflow.
 
-Beaver-Auth coordinates everything else.
+Your application owns persistence.
 
----
-
-> [!IMPORTANT]
->
-> Beaver-Auth is **not** an authentication server.
->
-> It is an authentication engine.
->
-> You own your application.
->
-> Beaver-Auth owns the authentication workflow.
-
----
-
-# Installation
-
-```bash
-npm install beaver-auth
-```
-
-or
-
-```bash
-pnpm add beaver-auth
-```
-
-or
-
-```bash
-yarn add beaver-auth
-```
-
----
-
-# Your framework doesn't matter
-
-Express.
-
-Fastify.
-
-NestJS.
-
-Hono.
-
-Koa.
-
-It doesn't matter.
-
-Your framework simply delivers requests.
-
-The authentication workflow never changes.
-
-## Express
+For example, verification can be enabled simply by supplying the verification engine:
 
 ```ts
-app.post('/register', async (req, res) => {
-	const result = await auth.register(req.body)
-
-	res.json(result)
-})
-```
-
-## Fastify
-
-```ts
-fastify.post('/register', async (request) => {
-	return auth.register(request.body)
-})
-```
-
-## NestJS
-
-```ts
-@Post()
-register(@Body() body: RegisterDto) {
-    return this.auth.register(body)
-}
-```
-
----
-
-# Your ORM doesn't matter either
-
-Today you're using Prisma.
-
-Six months later you're using Drizzle.
-
-Next year you're writing SQL.
-
-Beaver-Auth stays exactly the same.
-
-Only your adapter changes.
-
-```mermaid
-flowchart LR
-
-BeaverAuth
-
---> Adapter
-
-Adapter
-
---> Prisma
-
-Adapter
-
---> Drizzle
-
-Adapter
-
---> PostgreSQL
-
-Adapter
-
---> MongoDB
-```
-
----
-
-# Two ways to build
-
-## Factory API
-
-Perfect for most applications.
-
-```ts
-import { createAuth } from 'beaver-auth'
-
-const auth = createAuth({
-	adapter,
-	hooks,
-})
-```
-
----
-
-## Engine API
-
-Need complete control?
-
-Instantiate only the workflow you need.
-
-```ts
-import { RegistrationEngine } from 'beaver-auth'
-
 const registration = new RegistrationEngine({
 	adapter,
-	requireVerification,
+	requireVerification: verification,
 })
 ```
 
-Every authentication workflow is available as an independent engine.
+Without it, registration does not require verification.
+
+This keeps the default configuration small while allowing security requirements to become explicit when needed.
 
 ---
 
-# What actually happens?
+# Login Is a Workflow, Not a Function
 
-Calling
+Authentication becomes significantly more complicated once multiple authentication factors and session mechanisms are involved.
+
+Beaver-Auth treats login as a workflow.
+
+Conceptually:
+
+```text
+                Login
+                  │
+                  ▼
+             Validate input
+                  │
+                  ▼
+          Find authentication
+               subject
+                  │
+                  ▼
+          Verify credentials
+                  │
+                  ▼
+        ┌─────────┴─────────┐
+        │                   │
+      MFA?                No MFA
+        │                   │
+        ▼                   ▼
+  MFA challenge         Create session
+        │
+        ▼
+   Verify factor
+        │
+        ▼
+   Create session
+```
+
+This lets the application deal with the result rather than reconstructing the state machine itself.
+
+---
+
+# Multiple Authentication Mechanisms
+
+Beaver-Auth is designed around authentication workflows rather than a single authentication implementation.
+
+The system can support:
+
+- password authentication
+- TOTP
+- email verification
+- magic links
+- account recovery
+- OAuth
+- session authentication
+- JWT-based authentication
+- refresh-token flows
+- multi-factor authentication
+
+The important part is not simply having these features.
+
+It is having them **coexist within one authentication architecture.**
+
+---
+
+# Sessions and Tokens
+
+Beaver-Auth separates authentication from the mechanism used to maintain authenticated state.
+
+Depending on your application, authentication can result in mechanisms such as:
+
+```text
+Authentication
+      │
+      ├── Session
+      │
+      └── JWT
+            │
+            └── Refresh Token
+```
+
+For refresh-token authentication, Beaver-Auth can manage token families and reuse detection rather than treating refresh tokens as independent bearer strings.
+
+That distinction matters.
+
+A stolen refresh token should not simply become a permanently renewable credential.
+
+---
+
+# Security Is Part of the Workflow
+
+Security controls are not exposed as an afterthought.
+
+They are incorporated into the engines themselves.
+
+For example, registration can protect against account enumeration:
 
 ```ts
-await auth.register(input)
-```
-
-starts a coordinated authentication workflow.
-
-```mermaid
-flowchart LR
-
-A[Validate Input]
-
---> B[Hash Password]
-
---> C[Find Existing User]
-
---> D[Protect Against Enumeration]
-
---> E[Create User]
-
---> F[Generate Verification Token]
-
---> G[Dispatch Verification Hook]
-
---> H[Return Response]
-```
-
-The workflow is already built.
-
-You only configure it.
-
----
-
-# Security by default
-
-Beaver-Auth quietly enables production security features automatically.
-
-✅ Password hashing
-
-✅ Timing attack mitigation
-
-✅ Enumeration protection
-
-✅ Verification lifecycle
-
-✅ Token expiration
-
-✅ Retry with exponential backoff
-
-✅ Session abstraction
-
-✅ Transaction support
-
-✅ Adapter isolation
-
-✅ Zero runtime dependencies
-
-Security should be automatic.
-
-Not optional.
-
----
-
-# Hooks keep you in control
-
-Beaver-Auth intentionally does **not** send emails or SMS messages.
-
-Instead, it calls your hooks.
-
-```mermaid
-flowchart LR
-
-Registration
-
---> VerificationEngine
-
-VerificationEngine
-
---> Hook
-
-Hook
-
---> Send Email
-
-Hook
-
---> Send SMS
-
-Hook
-
---> Audit Log
-
-Hook
-
---> Analytics
-```
-
-Your infrastructure.
-
-Your providers.
-
-Your choice.
-
----
-
-# Logging
-
-Every engine accepts an optional `onSystemError` callback.
-
-```ts
-const auth = createAuth({
+const registration = new RegistrationEngine({
 	adapter,
-	hooks,
+	protectAgainstEnumeration: true,
+})
+```
+
+Timing behavior can also be controlled through a response floor:
+
+```ts
+const registration = new RegistrationEngine({
+	adapter,
+	responseFloorMs: 150,
+})
+```
+
+The goal is not to make developers configure dozens of security switches.
+
+The goal is to provide sensible security behavior while exposing the controls that genuinely belong to the application.
+
+---
+
+# Your Database. Your ORM.
+
+Beaver-Auth intentionally does not ship with a database model.
+
+Instead, you provide the persistence boundary.
+
+```text
+Beaver-Auth
+     │
+     ▼
+AuthRepoAdapter
+     │
+     ├── Prisma
+     ├── Drizzle
+     ├── PostgreSQL
+     ├── MongoDB
+     ├── MySQL
+     └── Your own persistence layer
+```
+
+This is not a limitation hidden behind marketing.
+
+It is an architectural decision.
+
+Beaver-Auth should not force its internal representation of a user onto your application's data model.
+
+Your application already has one.
+
+Beaver-Auth integrates with it.
+
+---
+
+# Transactions Are Yours Too
+
+Authentication workflows often involve multiple writes.
+
+Beaver-Auth therefore allows the application to provide its own transaction boundary:
+
+```ts
+const registration = new RegistrationEngine({
+	adapter,
+
+	runInTransaction: async (work) => {
+		return db.transaction(async (tx) => {
+			return work(createTransactionAdapter(tx))
+		})
+	},
+})
+```
+
+Beaver-Auth defines the workflow.
+
+Your database determines how that workflow becomes atomic.
+
+---
+
+# Verification Without Owning Your Email Provider
+
+Beaver-Auth creates and manages verification tokens.
+
+It does not require you to adopt a particular email provider.
+
+Instead, verification dispatches through a hook.
+
+```ts
+const verification = new VerificationEngine({
+	adapter,
+
+	hooks: {
+		async onVerificationRequired(payload) {
+			await emailProvider.send({
+				to: payload.email,
+				token: payload.token,
+				expiresAt: payload.expiresAt,
+			})
+		},
+	},
+})
+```
+
+Your email infrastructure remains yours.
+
+Beaver-Auth handles the security-sensitive token lifecycle.
+
+---
+
+# Background Work and Reliability
+
+Some authentication operations should not block the user's request.
+
+Verification delivery is one example.
+
+Beaver-Auth separates:
+
+```text
+Token creation
+      ↓
+Task dispatch
+      ↓
+Hook execution
+      ↓
+Retry / backoff
+      ↓
+Failure reporting
+```
+
+Token creation and hook dispatch have separate retry responsibilities.
+
+This means a temporary email-provider failure does not require the registration request itself to remain open.
+
+---
+
+# System Errors Are Observable
+
+Beaver-Auth does not force developers to use a particular logging or monitoring system.
+
+Engines can accept an `onSystemError` callback:
+
+```ts
+const registration = new RegistrationEngine({
+	adapter,
 
 	onSystemError(error) {
 		logger.error(error)
@@ -346,185 +515,181 @@ const auth = createAuth({
 })
 ```
 
-Use:
+This gives applications a clean integration point for:
 
-- Pino
-- Winston
-- OpenTelemetry
-- Sentry
-- Datadog
-- your own logger
+- application logging
+- structured logs
+- monitoring
+- error tracking
+- alerting
+- observability platforms
 
-Beaver-Auth never dictates your observability stack.
+Beaver-Auth handles the authentication failure.
 
----
-
-# Everything included
-
-## Authentication
-
-- Registration
-- Login
-- Logout
-- Sessions
-- Password recovery
-
-## Verification
-
-- Email verification
-- Verification resend
-- Magic links
-
-## Multi-factor Authentication
-
-- TOTP
-- Email
-- SMS
-
-## Authorization
-
-- Roles
-- Permissions
-
-## Security
-
-- Cryptography
-- Token lifecycle
-- Rate limiting
-- Retry engine
-
-## Infrastructure
-
-- Hooks
-- Adapters
-- Transactions
-- Custom logging
+**Your infrastructure decides where that failure goes.**
 
 ---
 
-# Architecture
+# Zero Runtime Dependencies
 
-Beaver-Auth sits between your framework and your infrastructure.
+Beaver-Auth is intentionally dependency-free.
 
-```mermaid
-flowchart TD
+Cryptographic primitives are built on Node.js's native capabilities rather than relying on third-party authentication packages.
 
-A[HTTP Request]
+The goal is straightforward:
 
---> B[Express / Fastify / NestJS / Hono]
-
-B --> C[Beaver-Auth]
-
-C --> D[Authentication Engines]
-
-D --> E[Adapters]
-
-D --> F[Hooks]
-
-E --> G[(Database)]
-
-F --> H[Email Provider]
-
-F --> I[SMS Provider]
+```text
+Your Application
+       │
+       ▼
+ Beaver-Auth
+       │
+       ▼
+Node.js
 ```
 
----
+rather than:
 
-# Design Philosophy
+```text
+Your Application
+       │
+       ▼
+ Beaver-Auth
+       │
+       ├── package A
+       │     ├── package B
+       │     └── package C
+       │
+       ├── package D
+       │     └── package E
+       │
+       └── package F
+```
 
-Beaver-Auth is built around five principles.
+Fewer dependencies do not automatically make software secure.
 
-| Principle                        | Why                                                                             |
-| -------------------------------- | ------------------------------------------------------------------------------- |
-| **Workflows over primitives**    | Authentication is a coordinated process — not a collection of helper functions. |
-| **Composition over inheritance** | Compose engines, adapters and hooks to build the system you need.               |
-| **Framework independence**       | Your authentication shouldn't depend on Express, NestJS or Fastify.             |
-| **Explicit over magic**          | No decorators. No hidden behavior. No code generation.                          |
-| **Secure defaults**              | The safest implementation should also be the easiest implementation.            |
-
----
-
-# What Beaver-Auth doesn't do
-
-To stay framework and infrastructure agnostic, Beaver-Auth intentionally does **not**:
-
-- create database tables
-- generate ORM models
-- own your HTTP layer
-- send emails
-- send SMS messages
-- dictate your folder structure
-- manage your infrastructure
-
-Instead, you connect Beaver-Auth to your application through adapters and hooks.
+But they do reduce the amount of third-party code your authentication boundary depends on and the dependency surface you have to maintain.
 
 ---
 
-# Documentation
+# Designed for Developers Who Want to Build, Not Rebuild Auth
 
-Whether you're getting started or exploring advanced customization, the documentation is organized to help you move from installation to production.
+Beaver-Auth is particularly useful when you already understand application architecture but don't want every new product to require rebuilding its authentication subsystem.
 
-## Getting Started
+You still decide:
 
-- Installation
-- Quick Start
-- Core Concepts
-- Architecture
+- how your application is structured
+- how users are persisted
+- how HTTP requests are handled
+- how sessions are exposed to the application
+- which infrastructure you use
+- which email provider you use
+- which OAuth providers you support
+- how your application logs and monitors failures
 
-## Guides
-
-- Registration
-- Login
-- Sessions
-- Verification
-- Multi-factor Authentication
-- OAuth
-- Authorization
-- Tokens
-- Cryptography
-- Rate Limiting
-
-## Advanced
-
-- Adapters
-- Hooks
-- Transactions
-- Error Handling
-- API Reference
+Beaver-Auth handles the authentication machinery underneath those decisions.
 
 ---
 
-# Roadmap
+# What Beaver-Auth Does Not Try to Do
 
-## Version 1
+Beaver-Auth is intentionally not:
 
-- ✅ Registration
-- ✅ Login
-- ✅ Sessions
-- ✅ Email Verification
-- ✅ OAuth
-- ✅ MFA
-- ✅ Tokens
-- ✅ Cryptography
-- ✅ Rate Limiting
+- a web framework
+- an ORM
+- a database abstraction that hides your database
+- an email provider
+- an SMS provider
+- an application-wide authorization framework
+- a replacement for your application's architecture
 
-### Planned
+It is an **authentication engine**.
 
-- WebAuthn / Passkeys
-- Device Management
-- Session Dashboard
-- ABAC Authorization
+That boundary is deliberate.
 
 ---
 
-# Contributing
+# Core Capabilities
 
-Contributions, ideas and feedback are welcome.
-
-If you'd like to improve Beaver-Auth, please open an issue or submit a pull request.
+| Capability                | Beaver-Auth |
+| ------------------------- | ----------- |
+| Registration              | ✓           |
+| Password authentication   | ✓           |
+| Email verification        | ✓           |
+| Magic links               | ✓           |
+| Account recovery          | ✓           |
+| Session management        | ✓           |
+| JWT authentication        | ✓           |
+| Refresh tokens            | ✓           |
+| MFA / TOTP                | ✓           |
+| OAuth                     | ✓           |
+| Rate limiting             | ✓           |
+| Cryptographic primitives  | ✓           |
+| Framework independent     | ✓           |
+| ORM independent           | ✓           |
+| Database independent      | ✓           |
+| Zero runtime dependencies | ✓           |
 
 ---
 
-# License
+# The Architectural Idea
+
+The central idea behind Beaver-Auth can be summarized as:
+
+> **Don't outsource your architecture. Outsource the authentication complexity.**
+
+Your application remains the system of record.
+
+Your database remains your database.
+
+Your framework remains your framework.
+
+Your infrastructure remains your infrastructure.
+
+Beaver-Auth sits between those pieces and provides the security workflows that would otherwise have to be designed, implemented, tested, and maintained repeatedly.
+
+```text
+                 YOUR APPLICATION
+
+       ┌──────────────────────────────┐
+       │       Framework / HTTP       │
+       └──────────────┬───────────────┘
+                      │
+                      ▼
+       ┌──────────────────────────────┐
+       │          Beaver-Auth         │
+       │                              │
+       │ Registration                 │
+       │ Login                        │
+       │ Verification                 │
+       │ MFA                          │
+       │ Sessions                     │
+       │ Tokens                       │
+       │ Recovery                     │
+       │ OAuth                        │
+       │ Rate Limiting                │
+       └──────────────┬───────────────┘
+                      │
+          ┌───────────┴───────────┐
+          ▼                       ▼
+       Database                Services
+       Adapter                  Hooks
+```
+
+The result is not an authentication framework that takes over your application.
+
+It is an authentication subsystem that fits into the architecture you already have.
+
+---
+
+# Get Started
+
+Start with the [Installation](./docs/installation.md) guide, then follow the [Quick Start](./docs/quick-start.md).
+
+For the architectural model behind Beaver-Auth, see [Core Concepts](./docs/core-concepts.md).
+
+---
+
+## License
 
 MIT
