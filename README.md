@@ -18,22 +18,22 @@ The difficulty is everything around them.
 
 A production authentication system has to coordinate:
 
-* password handling
-* validation
-* account enumeration protection
-* email verification
-* token lifecycle
-* sessions
-* refresh tokens
-* multi-factor authentication
-* rate limiting
-* account recovery
-* OAuth
-* retries and asynchronous work
-* database transactions
-* security-sensitive error handling
-* timing behavior
-* persistence boundaries
+- password handling
+- validation
+- account enumeration protection
+- email verification
+- token lifecycle
+- sessions
+- refresh tokens
+- multi-factor authentication
+- rate limiting
+- account recovery
+- OAuth
+- retries and asynchronous work
+- database transactions
+- security-sensitive error handling
+- timing behavior
+- persistence boundaries
 
 And these concerns don't exist independently.
 
@@ -97,11 +97,11 @@ Beaver-Auth deliberately stops at the application boundary.
 
 It does **not** require you to adopt:
 
-* a particular web framework
-* a particular ORM
-* a particular database
-* a particular application architecture
-* a particular infrastructure provider
+- a particular web framework
+- a particular ORM
+- a particular database
+- a particular application architecture
+- a particular infrastructure provider
 
 Your application owns those decisions.
 
@@ -161,13 +161,13 @@ For example:
 
 ```ts
 const auth = new RegistrationEngine({
-  adapter: {
-    findUserByEmail,
-    createUser,
-    // ...
-  },
+	adapter: {
+		findUserByEmail,
+		createUser,
+		// ...
+	},
 
-  requireVerification: verification,
+	requireVerification: verification,
 })
 ```
 
@@ -175,9 +175,9 @@ Your persistence implementation remains yours.
 
 ```ts
 const findUserByEmail = async (email: string) => {
-  return db.user.findUnique({
-    where: { email },
-  })
+	return db.user.findUnique({
+		where: { email },
+	})
 }
 ```
 
@@ -196,19 +196,19 @@ That distinction is important.
 Install Beaver-Auth:
 
 ```bash
-npm install beaver-auth
-```
-
-or 
-
-```bash
-pnpm add beaver-auth
+npm install @beaver-auth/core
 ```
 
 or
 
 ```bash
-yarn add beaver-auth
+pnpm add @beaver-auth/core
+```
+
+or
+
+```bash
+yarn add @beaver-auth/core
 ```
 
 Then choose how you want to initialize it.
@@ -220,10 +220,7 @@ Then choose how you want to initialize it.
 Use the engines directly when you want explicit control over composition.
 
 ```ts
-import {
-  RegistrationEngine,
-  LoginEngine,
-} from "beaver-auth"
+import { RegistrationEngine, LoginEngine } from 'beaver-auth'
 ```
 
 ### Factory API
@@ -231,10 +228,10 @@ import {
 Use the factory when you want Beaver-Auth to provide the application-level composition for you.
 
 ```ts
-import { createAuth } from "beaver-auth"
+import { createAuth } from 'beaver-auth'
 
 const auth = createAuth({
-  // configuration
+	// configuration
 })
 ```
 
@@ -248,9 +245,9 @@ A registration workflow can include account enumeration protection, credential h
 
 ```ts
 const result = await registration.execute({
-  email,
-  password,
-  profile,
+	email,
+	password,
+	profile,
 })
 ```
 
@@ -262,8 +259,8 @@ For example, verification can be enabled simply by supplying the verification en
 
 ```ts
 const registration = new RegistrationEngine({
-  adapter,
-  requireVerification: verification,
+	adapter,
+	requireVerification: verification,
 })
 ```
 
@@ -319,16 +316,16 @@ Beaver-Auth is designed around authentication workflows rather than a single aut
 
 The system can support:
 
-* password authentication
-* TOTP
-* email verification
-* magic links
-* account recovery
-* OAuth
-* session authentication
-* JWT-based authentication
-* refresh-token flows
-* multi-factor authentication
+- password authentication
+- TOTP
+- email verification
+- magic links
+- account recovery
+- OAuth
+- session authentication
+- JWT-based authentication
+- refresh-token flows
+- multi-factor authentication
 
 The important part is not simply having these features.
 
@@ -370,8 +367,8 @@ For example, registration can protect against account enumeration:
 
 ```ts
 const registration = new RegistrationEngine({
-  adapter,
-  protectAgainstEnumeration: true,
+	adapter,
+	protectAgainstEnumeration: true,
 })
 ```
 
@@ -379,8 +376,8 @@ Timing behavior can also be controlled through a response floor:
 
 ```ts
 const registration = new RegistrationEngine({
-  adapter,
-  responseFloorMs: 150,
+	adapter,
+	responseFloorMs: 150,
 })
 ```
 
@@ -430,13 +427,13 @@ Beaver-Auth therefore allows the application to provide its own transaction boun
 
 ```ts
 const registration = new RegistrationEngine({
-  adapter,
+	adapter,
 
-  runInTransaction: async (work) => {
-    return db.transaction(async (tx) => {
-      return work(createTransactionAdapter(tx))
-    })
-  },
+	runInTransaction: async (work) => {
+		return db.transaction(async (tx) => {
+			return work(createTransactionAdapter(tx))
+		})
+	},
 })
 ```
 
@@ -456,17 +453,17 @@ Instead, verification dispatches through a hook.
 
 ```ts
 const verification = new VerificationEngine({
-  adapter,
+	adapter,
 
-  hooks: {
-    async onVerificationRequired(payload) {
-      await emailProvider.send({
-        to: payload.email,
-        token: payload.token,
-        expiresAt: payload.expiresAt,
-      })
-    },
-  },
+	hooks: {
+		async onVerificationRequired(payload) {
+			await emailProvider.send({
+				to: payload.email,
+				token: payload.token,
+				expiresAt: payload.expiresAt,
+			})
+		},
+	},
 })
 ```
 
@@ -510,22 +507,22 @@ Engines can accept an `onSystemError` callback:
 
 ```ts
 const registration = new RegistrationEngine({
-  adapter,
+	adapter,
 
-  onSystemError(error) {
-    logger.error(error)
-  },
+	onSystemError(error) {
+		logger.error(error)
+	},
 })
 ```
 
 This gives applications a clean integration point for:
 
-* application logging
-* structured logs
-* monitoring
-* error tracking
-* alerting
-* observability platforms
+- application logging
+- structured logs
+- monitoring
+- error tracking
+- alerting
+- observability platforms
 
 Beaver-Auth handles the authentication failure.
 
@@ -581,14 +578,14 @@ Beaver-Auth is particularly useful when you already understand application archi
 
 You still decide:
 
-* how your application is structured
-* how users are persisted
-* how HTTP requests are handled
-* how sessions are exposed to the application
-* which infrastructure you use
-* which email provider you use
-* which OAuth providers you support
-* how your application logs and monitors failures
+- how your application is structured
+- how users are persisted
+- how HTTP requests are handled
+- how sessions are exposed to the application
+- which infrastructure you use
+- which email provider you use
+- which OAuth providers you support
+- how your application logs and monitors failures
 
 Beaver-Auth handles the authentication machinery underneath those decisions.
 
@@ -598,13 +595,13 @@ Beaver-Auth handles the authentication machinery underneath those decisions.
 
 Beaver-Auth is intentionally not:
 
-* a web framework
-* an ORM
-* a database abstraction that hides your database
-* an email provider
-* an SMS provider
-* an application-wide authorization framework
-* a replacement for your application's architecture
+- a web framework
+- an ORM
+- a database abstraction that hides your database
+- an email provider
+- an SMS provider
+- an application-wide authorization framework
+- a replacement for your application's architecture
 
 It is an **authentication engine**.
 
