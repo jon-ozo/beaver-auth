@@ -684,9 +684,9 @@ It is an authentication subsystem that fits into the architecture you already ha
 
 # Get Started
 
-Start with the [Installation](./docs/installation.md) guide, then follow the [Quick Start](./docs/quick-start.md).
+Start with the [Installation](./docs/get-started/installation.md) guide, then follow the [Quick Start](./docs/get-started/quick-start.md).
 
-For the architectural model behind Beaver-Auth, see [Core Concepts](./docs/core-concepts.md).
+For the architectural model behind Beaver-Auth, see [Core Concepts](./docs/get-started/core-concepts.md).
 
 ---
 
