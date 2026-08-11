@@ -34,7 +34,7 @@
 		"mfa",
 		"oauth"
 	],
-	"author": "Beaver Auth",
+	"author": "John Ozoemena",
 	"license": "Apache-2.0",
 	"devDependencies": {
 		"@types/node": "^26.1.1",
