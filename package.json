@@ -1,6 +1,6 @@
 {
 	"name": "Beaver Auth Monorepo",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"private": true,
 	"description": "Monorepo for the Beaver Auth ecosystem",
 	"scripts": {
@@ -11,7 +11,7 @@
 	},
 	"keywords": [],
 	"author": "",
-	"license": "ISC",
+	"license": "Apache-2.0",
 	"packageManager": "pnpm@11.18.0",
 	"devDependencies": {
 		"vitest": "^1.6.0"

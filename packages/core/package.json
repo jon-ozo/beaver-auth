@@ -1,6 +1,6 @@
 {
 	"name": "@beaver-auth/core",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "Lightweight, type-safe authorization and authentication core engine.",
 	"type": "module",
 	"main": "./dist/index.cjs",
@@ -35,7 +35,7 @@
 		"oauth"
 	],
 	"author": "Beaver Auth",
-	"license": "MIT",
+	"license": "Apache-2.0",
 	"devDependencies": {
 		"@types/node": "^26.1.1",
 		"tsup": "^8.0.2",

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 John Ozoemena
+// SPDX-License-Identifier: Apache-2.0
+
 import { normalizePayload, PayloadPolicy } from './normalize-payload.js'
 import { NormalizeOptions } from './normalize-payload.js'
 

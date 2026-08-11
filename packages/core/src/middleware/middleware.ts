@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 John Ozoemena
+// SPDX-License-Identifier: Apache-2.0
+
 import { SessionManager } from '../session/session.js'
 import { TokenEngine } from '../internal/token.js'
 import { AuthRepoAdapter, User, Session } from '../../types.js'

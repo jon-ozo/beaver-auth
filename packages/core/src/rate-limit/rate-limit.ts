@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 John Ozoemena
+// SPDX-License-Identifier: Apache-2.0
+
 import { MemoryStore } from './rate-limit.store.js'
 import {
 	TokenBucketStrategy,

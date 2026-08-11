@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 John Ozoemena
+// SPDX-License-Identifier: Apache-2.0
+
 // ── Barrel exports — for consumers who want to construct and wire
 export { RegistrationEngine } from './src/register/register.js'
 export { LoginEngine } from './src/login/login.js'

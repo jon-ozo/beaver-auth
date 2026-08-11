@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 John Ozoemena
+// SPDX-License-Identifier: Apache-2.0
+
 import { AuthRepoAdapter } from '../../types.js'
 import { generateSecureToken, hashSecureToken } from './secure-token.js'
 

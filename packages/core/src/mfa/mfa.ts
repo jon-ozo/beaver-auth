@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 John Ozoemena
+// SPDX-License-Identifier: Apache-2.0
+
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 
 export type TotpSecretResult = { secret: string; uri: string }

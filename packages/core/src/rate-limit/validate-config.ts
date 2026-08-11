@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 John Ozoemena
+// SPDX-License-Identifier: Apache-2.0
+
 import { RateLimiterConfig } from './rate-limit.types.js'
 
 export function validateConfig(config: RateLimiterConfig): void {

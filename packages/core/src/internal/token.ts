@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 John Ozoemena
+// SPDX-License-Identifier: Apache-2.0
+
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { AuthRepoAdapter } from '../../types.js'
 import { normalizeJwtPayload } from './normalize-payload/normalize-jwt-payload.js'

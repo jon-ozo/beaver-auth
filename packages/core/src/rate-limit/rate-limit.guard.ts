@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 John Ozoemena
+// SPDX-License-Identifier: Apache-2.0
+
 import { RateLimiterEngine } from './rate-limit.js'
 import { RateLimitResult } from './rate-limit.types.js'
 
