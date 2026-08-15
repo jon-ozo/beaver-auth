@@ -688,6 +688,8 @@ Start with the [Installation](./docs/get-started/installation.md) guide, then fo
 
 For the architectural model behind Beaver-Auth, see [Core Concepts](./docs/get-started/core-concepts.md).
 
+For cryptography implementation, see [Cryptography](./docs/get-started/cryptography.md).
+
 ---
 
 ## License

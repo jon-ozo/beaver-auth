@@ -59,4 +59,6 @@ A few things worth knowing if you're evaluating beaver-auth's security model bef
 
 If something here doesn't hold up the way it's described, that's exactly the kind of report we want — please tell us.
 
+For cryptography implementation, see [Cryptography](./docs/get-started/cryptography.md).
+
 Thank you for helping keep beaver-auth and the people who depend on it safe.
