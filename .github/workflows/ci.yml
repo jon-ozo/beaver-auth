@@ -53,7 +53,11 @@ jobs:
       - name: Build Core Package Only
         run: pnpm --filter @beaver-auth/core run build
 
+      - name: Upgrade npm to latest version
+        run: npm install -g npm@latest
+
       - name: Publish Core Package using OIDC
         run: |
           cd packages/core 
+          rm -f .npmrc
           npm publish --provenance --access public
