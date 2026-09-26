@@ -104,7 +104,29 @@ export class RefreshTokenEngine {
 			return { status: 'expired' }
 		}
 
-		await this.adapter.markRefreshTokenUsed(tokenHash)
+		const wasTransitioned = await this.adapter.markRefreshTokenUsed(tokenHash)
+
+		if (!wasTransitioned) {
+			// Lost a race: another call (a network retry from the legitimate
+			// client, or an attacker racing them with a stolen token)
+			// transitioned this token to 'used' between our read above and
+			// this write. We can't safely distinguish those two cases, so —
+			// exactly like the sequential-reuse branch above — fail closed
+			// and revoke the whole family rather than let this call proceed
+			// to also mint a new token pair.
+			await this.adapter.revokeRefreshTokenFamily(record.familyId)
+			this.onSystemError(
+				new Error(
+					`Refresh token reuse detected (concurrent rotation) for user ` +
+						`${record.userId}, family ${record.familyId}. Family revoked.`,
+				),
+			)
+			return {
+				status: 'reused-token-family-revoked',
+				userId: record.userId,
+				familyId: record.familyId,
+			}
+		}
 
 		const newRawToken = generateSecureToken()
 		const newTokenHash = hashSecureToken(newRawToken)

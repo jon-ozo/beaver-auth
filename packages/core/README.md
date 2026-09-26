@@ -1,6 +1,6 @@
 # Beaver-Auth
 
-### Production-grade authentication workflows without building the security architecture yourself.
+### Designed for production authentication workflows without building the security architecture yourself.
 
 Beaver-Auth is a framework-agnostic authentication engine for JavaScript and Node.js applications.
 
@@ -220,7 +220,7 @@ Then choose how you want to initialize it.
 Use the engines directly when you want explicit control over composition.
 
 ```ts
-import { RegistrationEngine, LoginEngine } from 'beaver-auth'
+import { RegistrationEngine, LoginEngine } from '@beaver-auth/core'
 ```
 
 ### Factory API
@@ -228,7 +228,7 @@ import { RegistrationEngine, LoginEngine } from 'beaver-auth'
 Use the factory when you want Beaver-Auth to provide the application-level composition for you.
 
 ```ts
-import { createAuth } from 'beaver-auth'
+import { createAuth } from '@beaver-auth/core'
 
 const auth = createAuth({
 	// configuration
@@ -616,7 +616,6 @@ That boundary is deliberate.
 | Registration              | ✓           |
 | Password authentication   | ✓           |
 | Email verification        | ✓           |
-| Magic links               | ✓           |
 | Account recovery          | ✓           |
 | Session management        | ✓           |
 | JWT authentication        | ✓           |
@@ -692,4 +691,4 @@ For the architectural model behind Beaver-Auth, see [Core Concepts](./docs/core-
 
 ## License
 
-MIT
+Apache-2.0

@@ -99,9 +99,7 @@ export interface CreateBeaverAuthConfig {
 
 	/**
 	 * Presence constructs an AuthMiddlewareEngine for protected-route use.
-	 * jwtConfig.secret/adapter are required by AuthMiddlewareEngine itself
-	 * (a deliberate choice made earlier in this build — no half-configured
-	 * middleware), so this whole block is required together, not optional
+	 * jwtConfig.secret/adapter are required by AuthMiddlewareEngine itself, so this whole block is required together, not optional
 	 * field-by-field.
 	 */
 	middleware?: {
@@ -114,8 +112,7 @@ export interface CreateBeaverAuthConfig {
 	 * Presence per key enables rate limiting for that specific flow. Each
 	 * is independently optional — e.g. rate-limit login without
 	 * rate-limiting registration. Constructed engines are handed back for
-	 * you to wire into your own route handlers via checkAuthRateLimit,
-	 * exactly as designed earlier — this factory does NOT call them
+	 * you to wire into your own route handlers via checkAuthRateLimit. The factory does NOT call them
 	 * automatically inside registration/login/reset, since rate-limit
 	 * identifier strategy (IP, email, composite) is a threat-model
 	 * decision this package deliberately leaves to you.
@@ -173,7 +170,7 @@ export interface BeaverAuth {
  * different onSystemError per engine, engines constructed at different
  * times, or a subset of the graph only).
  */
-export function createBeaverAuth(config: CreateBeaverAuthConfig): BeaverAuth {
+export function createAuth(config: CreateBeaverAuthConfig): BeaverAuth {
 	const onSystemError =
 		config.onSystemError ??
 		((error: unknown) => {

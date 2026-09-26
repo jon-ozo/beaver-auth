@@ -13,6 +13,7 @@ import { TokenEngine } from '../internal/token.js'
 import { ValidationEngine } from '../internal/validation.js'
 import { RefreshTokenEngine } from '../internal/refresh-token.js'
 import { holdToFloor } from '../internal/hold-to-floor.js'
+import { toPublicUser } from '../internal/public-user.js'
 
 export interface LoginEngineConfig {
 	adapter: AuthRepoAdapter
@@ -149,7 +150,7 @@ export class LoginEngine {
 				await holdToFloor(this.responseFloorMs, start)
 				return {
 					status: 'success-jwt',
-					user,
+					user: toPublicUser(user),
 					accessToken,
 					refreshToken,
 					familyId,
@@ -159,7 +160,12 @@ export class LoginEngine {
 			const { token, session } = await this.sessions.create(user.id, context)
 
 			await holdToFloor(this.responseFloorMs, start)
-			return { status: 'success-session', user, session, token }
+			return {
+				status: 'success-session',
+				user: toPublicUser(user),
+				session,
+				token,
+			}
 		} catch (err) {
 			this.onSystemError(err)
 			return this.systemError(start)
@@ -203,7 +209,7 @@ export class LoginEngine {
 			await holdToFloor(this.responseFloorMs, start)
 			return {
 				status: 'success-jwt',
-				user,
+				user: toPublicUser(user),
 				accessToken,
 				refreshToken: rotation.refreshToken,
 				familyId: rotation.familyId,
@@ -309,7 +315,7 @@ export class LoginEngine {
 				await holdToFloor(this.responseFloorMs, start)
 				return {
 					status: 'success-jwt',
-					user,
+					user: toPublicUser(user),
 					accessToken,
 					refreshToken,
 					familyId,
@@ -318,7 +324,12 @@ export class LoginEngine {
 
 			const { token, session } = await this.sessions.create(user.id, context)
 			await holdToFloor(this.responseFloorMs, start)
-			return { status: 'success-session', user, session, token }
+			return {
+				status: 'success-session',
+				user: toPublicUser(user),
+				session,
+				token,
+			}
 		} catch (err) {
 			this.onSystemError(err)
 			return this.systemError(start)

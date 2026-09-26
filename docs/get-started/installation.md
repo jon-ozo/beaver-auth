@@ -30,14 +30,14 @@ Beaver-Auth gives you two ways to build your authentication system.
 
 ### 1. Use the factory
 
-For most applications, `createBeaverAuth()` is the simplest starting point.
+For most applications, `createAuth()` is the simplest starting point.
 
 The factory constructs and wires the Beaver-Auth engines into a single authentication object:
 
 ```ts
-import { createBeaverAuth } from '@beaver-auth/core'
+import { createAuth } from '@beaver-auth/core'
 
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 })
 ```
@@ -53,7 +53,7 @@ auth.sessions
 Optional capabilities can be enabled through the factory configuration:
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	verification: {
@@ -184,7 +184,7 @@ Beaver-Auth therefore provides an optional `onSystemError` hook.
 If you do nothing, Beaver-Auth falls back to `console.error`:
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 })
 ```
@@ -192,7 +192,7 @@ const auth = createBeaverAuth({
 If your application already has a logging or observability system, provide it:
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	onSystemError(error) {
@@ -216,7 +216,7 @@ Optional capabilities are enabled by including their configuration.
 For example:
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	verification: {
@@ -252,7 +252,7 @@ From there, you can either:
 **Start with the factory**
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 })
 ```

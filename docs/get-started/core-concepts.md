@@ -491,7 +491,7 @@ registration does not require email verification.
 The same idea appears throughout the factory API.
 
 ```ts
-createBeaverAuth({
+createAuth({
 	adapter,
 
 	verification: {
@@ -536,7 +536,7 @@ import {
 	LoginEngine,
 	SessionManager,
 	VerificationEngine,
-} from 'beaver-auth'
+} from '@beaver-auth/core'
 ```
 
 Then wire the dependencies yourself:
@@ -579,13 +579,13 @@ It is useful when:
 You can alternatively use:
 
 ```ts
-import { createBeaverAuth } from 'beaver-auth'
+import { createAuth } from '@beaver-auth/core'
 ```
 
 and allow Beaver-Auth to construct and wire the authentication graph.
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	verification: {
@@ -643,7 +643,7 @@ Constructing the graph manually means you are responsible for maintaining that r
 The factory handles it for you.
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	verification: {
@@ -681,7 +681,7 @@ This is an **observability boundary**.
 For example:
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	onSystemError(error) {
@@ -1166,14 +1166,14 @@ Only after the second stage succeeds does Beaver-Auth create the authenticated s
 
 # 22. The Factory Is Composition, Not Magic
 
-`createBeaverAuth()` does not introduce a different authentication system.
+`createAuth()` does not introduce a different authentication system.
 
 It constructs the same engines you can construct manually.
 
 Conceptually:
 
 ```text
-createBeaverAuth()
+createAuth()
        │
        ├── SessionManager
        ├── VerificationEngine?

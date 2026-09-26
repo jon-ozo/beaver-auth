@@ -102,12 +102,12 @@ Beaver-Auth supports two styles of construction.
 
 ### The factory
 
-For most applications, `createBeaverAuth()` is the simplest entry point.
+For most applications, `createAuth()` is the simplest entry point.
 
 The factory constructs and wires the dependency graph for you:
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 	verification: {
 		hooks: verificationHooks,
@@ -130,7 +130,7 @@ The factory also propagates shared configuration such as `onSystemError`, the de
 Optional capabilities are enabled by configuration presence.
 
 ```text
-createBeaverAuth()
+createAuth()
        │
        ├── RegistrationEngine
        ├── LoginEngine
@@ -159,7 +159,7 @@ import {
 	VerificationEngine,
 	SessionManager,
 	RateLimiterEngine,
-} from 'beaver-auth'
+} from '@beaver-auth/core'
 ```
 
 This allows applications to construct only what they need or control the dependency graph themselves.
@@ -618,7 +618,7 @@ while the underlying error is passed to `onSystemError`.
 By default, Beaver-Auth uses `console.error`, but applications can provide their own handler.
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	onSystemError(error) {
@@ -694,7 +694,7 @@ Beaver-Auth provides rate-limiting engines, but the factory does not silently in
 Instead, configured rate limiters are returned to the application:
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	rateLimiters: {
@@ -752,7 +752,7 @@ It constructs the objects that implement authentication and connects their depen
 For example:
 
 ```text
-                         createBeaverAuth()
+                         createAuth()
                                 │
              ┌──────────────────┼──────────────────┐
              │                  │                  │

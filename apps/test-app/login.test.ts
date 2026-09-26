@@ -1,10 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
-import {
-	LoginEngine,
-	SessionManager,
-	CryptoEngine,
-	TokenEngine,
-} from '@beaver-auth/core'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { LoginEngine, SessionManager, CryptoEngine, TokenEngine } from '@beaver-auth/core'
 import { MockAdapter } from './support/mock-adapter.js'
 import { currentTotpCode, TEST_TOTP_SECRET } from './support/totp.js'
 
@@ -117,18 +112,13 @@ describe('LoginEngine.executePasswordStage', () => {
 
 		// familyId is what makes logout actually work — refreshAccessToken
 		// should succeed once with the issued refresh token.
-		const refreshed = await login.refreshAccessToken(
-			result.refreshToken,
-			JWT_SECRET,
-		)
+		const refreshed = await login.refreshAccessToken(result.refreshToken, JWT_SECRET)
 		expect(refreshed.status).toBe('success-jwt')
 	})
 
 	it('rejects login for an unverified (pending) user without revealing anything else', async () => {
 		const { login, adapter } = buildLoginEngine()
-		const user = await seedVerifiedUser(adapter, {
-			verificationStatus: 'pending',
-		})
+		const user = await seedVerifiedUser(adapter, { verificationStatus: 'pending' })
 
 		const result = await login.executePasswordStage(
 			{ email: 'login-test@example.com', password: PASSWORD },
@@ -197,9 +187,7 @@ describe('LoginEngine.executePasswordStage', () => {
 
 	it('reports via onSystemError and returns system-error when the adapter throws unexpectedly', async () => {
 		const { login, adapter, onSystemError } = buildLoginEngine()
-		vi.spyOn(adapter, 'findUserByEmail').mockRejectedValueOnce(
-			new Error('db down'),
-		)
+		vi.spyOn(adapter, 'findUserByEmail').mockRejectedValueOnce(new Error('db down'))
 
 		const result = await login.executePasswordStage(
 			{ email: 'anyone@example.com', password: PASSWORD },
@@ -213,10 +201,7 @@ describe('LoginEngine.executePasswordStage', () => {
 
 describe('LoginEngine MFA flow (executeMfaStage)', () => {
 	async function seedMfaUser(adapter: MockAdapter) {
-		return seedVerifiedUser(adapter, {
-			mfaEnabled: true,
-			mfaSecret: TEST_TOTP_SECRET,
-		})
+		return seedVerifiedUser(adapter, { mfaEnabled: true, mfaSecret: TEST_TOTP_SECRET })
 	}
 
 	it('completes login with a valid TOTP code', async () => {
@@ -227,8 +212,7 @@ describe('LoginEngine MFA flow (executeMfaStage)', () => {
 			{ email: 'login-test@example.com', password: PASSWORD },
 			JWT_SECRET,
 		)
-		if (stage1.status !== 'mfa-required')
-			throw new Error('expected mfa-required')
+		if (stage1.status !== 'mfa-required') throw new Error('expected mfa-required')
 
 		const code = currentTotpCode(TEST_TOTP_SECRET)
 		const stage2 = await login.executeMfaStage(
@@ -250,8 +234,7 @@ describe('LoginEngine MFA flow (executeMfaStage)', () => {
 			{ email: 'login-test@example.com', password: PASSWORD },
 			JWT_SECRET,
 		)
-		if (stage1.status !== 'mfa-required')
-			throw new Error('expected mfa-required')
+		if (stage1.status !== 'mfa-required') throw new Error('expected mfa-required')
 
 		const stage2 = await login.executeMfaStage(
 			{ mfaChallengeToken: stage1.mfaChallengeToken, code: '000000' },
@@ -269,8 +252,7 @@ describe('LoginEngine MFA flow (executeMfaStage)', () => {
 			{ email: 'login-test@example.com', password: PASSWORD },
 			JWT_SECRET,
 		)
-		if (stage1.status !== 'mfa-required')
-			throw new Error('expected mfa-required')
+		if (stage1.status !== 'mfa-required') throw new Error('expected mfa-required')
 
 		const code = currentTotpCode(TEST_TOTP_SECRET)
 		await login.executeMfaStage(
@@ -294,8 +276,7 @@ describe('LoginEngine MFA flow (executeMfaStage)', () => {
 			{ email: 'login-test@example.com', password: PASSWORD },
 			JWT_SECRET,
 		)
-		if (first.status !== 'mfa-required')
-			throw new Error('expected mfa-required')
+		if (first.status !== 'mfa-required') throw new Error('expected mfa-required')
 		const firstStage2 = await login.executeMfaStage(
 			{ mfaChallengeToken: first.mfaChallengeToken, code },
 			JWT_SECRET,
@@ -308,8 +289,7 @@ describe('LoginEngine MFA flow (executeMfaStage)', () => {
 			{ email: 'login-test@example.com', password: PASSWORD },
 			JWT_SECRET,
 		)
-		if (second.status !== 'mfa-required')
-			throw new Error('expected mfa-required')
+		if (second.status !== 'mfa-required') throw new Error('expected mfa-required')
 		const secondStage2 = await login.executeMfaStage(
 			{ mfaChallengeToken: second.mfaChallengeToken, code },
 			JWT_SECRET,
@@ -329,8 +309,7 @@ describe('LoginEngine refresh token rotation', () => {
 			undefined,
 			{ sessionType: 'jwt' },
 		)
-		if (loginResult.status !== 'success-jwt')
-			throw new Error('expected success-jwt')
+		if (loginResult.status !== 'success-jwt') throw new Error('expected success-jwt')
 
 		const firstRefresh = await login.refreshAccessToken(
 			loginResult.refreshToken,
@@ -357,15 +336,13 @@ describe('LoginEngine refresh token rotation', () => {
 			undefined,
 			{ sessionType: 'jwt' },
 		)
-		if (loginResult.status !== 'success-jwt')
-			throw new Error('expected success-jwt')
+		if (loginResult.status !== 'success-jwt') throw new Error('expected success-jwt')
 
 		const firstRefresh = await login.refreshAccessToken(
 			loginResult.refreshToken,
 			JWT_SECRET,
 		)
-		if (firstRefresh.status !== 'success-jwt')
-			throw new Error('expected success-jwt')
+		if (firstRefresh.status !== 'success-jwt') throw new Error('expected success-jwt')
 
 		// Trigger reuse detection on the original token.
 		await login.refreshAccessToken(loginResult.refreshToken, JWT_SECRET)
@@ -389,8 +366,7 @@ describe('LoginEngine refresh token rotation', () => {
 			undefined,
 			{ sessionType: 'jwt' },
 		)
-		if (loginResult.status !== 'success-jwt')
-			throw new Error('expected success-jwt')
+		if (loginResult.status !== 'success-jwt') throw new Error('expected success-jwt')
 
 		await login.logoutJwtSession(loginResult.familyId)
 
@@ -436,5 +412,75 @@ describe('LoginEngine.resendVerification', () => {
 
 		expect(result.status).toBe('system-error')
 		expect(onSystemError).toHaveBeenCalled()
+	})
+})
+
+describe('LoginEngine — login results never expose sensitive user fields (regression)', () => {
+	it('REGRESSION GUARD: success-session never carries passwordHash or mfaSecret, even for an MFA-enabled user', async () => {
+		const { login, adapter } = buildLoginEngine()
+		await seedVerifiedUser(adapter, { mfaEnabled: true, mfaSecret: 'SUPERSECRETTOTPKEY' })
+
+		const result = await login.executePasswordStage(
+			{ email: 'login-test@example.com', password: PASSWORD },
+			JWT_SECRET,
+		)
+
+		// mfaEnabled=true routes to mfa-required, not a session directly —
+		// confirm that branch doesn't leak the raw record either.
+		expect(result.status).toBe('mfa-required')
+
+		const stage1 = result
+		if (stage1.status !== 'mfa-required') throw new Error('unreachable')
+		const code = currentTotpCode('SUPERSECRETTOTPKEY')
+		const stage2 = await login.executeMfaStage(
+			{ mfaChallengeToken: stage1.mfaChallengeToken, code },
+			JWT_SECRET,
+		)
+
+		expect(stage2.status).toBe('success-session')
+		if (stage2.status === 'success-session') {
+			expect(stage2.user).not.toHaveProperty('passwordHash')
+			expect(stage2.user).not.toHaveProperty('mfaSecret')
+			expect(JSON.stringify(stage2.user)).not.toContain('SUPERSECRETTOTPKEY')
+		}
+	})
+
+	it('REGRESSION GUARD: success-jwt never carries passwordHash or mfaSecret', async () => {
+		const { login, adapter } = buildLoginEngine()
+		await seedVerifiedUser(adapter)
+
+		const result = await login.executePasswordStage(
+			{ email: 'login-test@example.com', password: PASSWORD },
+			JWT_SECRET,
+			undefined,
+			{ sessionType: 'jwt' },
+		)
+
+		expect(result.status).toBe('success-jwt')
+		if (result.status === 'success-jwt') {
+			expect(result.user).not.toHaveProperty('passwordHash')
+			expect(result.user).not.toHaveProperty('mfaSecret')
+		}
+	})
+
+	it('REGRESSION GUARD: refreshAccessToken\'s result also never carries passwordHash or mfaSecret', async () => {
+		const { login, adapter } = buildLoginEngine()
+		await seedVerifiedUser(adapter)
+
+		const loginResult = await login.executePasswordStage(
+			{ email: 'login-test@example.com', password: PASSWORD },
+			JWT_SECRET,
+			undefined,
+			{ sessionType: 'jwt' },
+		)
+		if (loginResult.status !== 'success-jwt') throw new Error('expected success-jwt')
+
+		const refreshed = await login.refreshAccessToken(loginResult.refreshToken, JWT_SECRET)
+
+		expect(refreshed.status).toBe('success-jwt')
+		if (refreshed.status === 'success-jwt') {
+			expect(refreshed.user).not.toHaveProperty('passwordHash')
+			expect(refreshed.user).not.toHaveProperty('mfaSecret')
+		}
 	})
 })

@@ -67,19 +67,25 @@ describe('RefreshTokenEngine.rotate', () => {
 	})
 
 	it('returns expired for a token past its expiry, without rotating or marking it used', async () => {
-		const { adapter, engine } = buildEngine({ refreshTokenTimeoutMs: 10 })
-		const { refreshToken, familyId } = await engine.issue('user-1')
+		vi.useFakeTimers()
+		try {
+			vi.setSystemTime(0)
+			const { adapter, engine } = buildEngine({ refreshTokenTimeoutMs: 10 })
+			const { refreshToken, familyId } = await engine.issue('user-1')
 
-		await new Promise((r) => setTimeout(r, 30))
+			vi.setSystemTime(30)
 
-		const result = await engine.rotate(refreshToken)
-		expect(result).toEqual({ status: 'expired' })
+			const result = await engine.rotate(refreshToken)
+			expect(result).toEqual({ status: 'expired' })
 
-		const familyRecords = [...adapter.refreshTokens.values()].filter(
-			(r) => r.familyId === familyId,
-		)
-		expect(familyRecords).toHaveLength(1)
-		expect(familyRecords[0].status).toBe('active')
+			const familyRecords = [...adapter.refreshTokens.values()].filter(
+				(r) => r.familyId === familyId,
+			)
+			expect(familyRecords).toHaveLength(1)
+			expect(familyRecords[0].status).toBe('active')
+		} finally {
+			vi.useRealTimers()
+		}
 	})
 
 	it('reusing an already-rotated token triggers reuse detection and revokes the WHOLE family', async () => {
@@ -184,5 +190,57 @@ describe('RefreshTokenEngine.purgeExpiredRefreshTokens', () => {
 		expect(adapter.refreshTokens.has('expired-active')).toBe(false)
 		expect(adapter.refreshTokens.has('expired-used')).toBe(false)
 		expect(adapter.refreshTokens.has('still-valid')).toBe(true)
+	})
+})
+
+describe('RefreshTokenEngine.rotate — concurrency (regression: race condition)', () => {
+	it('REGRESSION GUARD: two concurrent rotate() calls on the SAME token do not both succeed', async () => {
+		// This is the exact bug reported from real-world usage: rotate()
+		// reads the token (status='active'), then later marks it used —
+		// with real async work in between. Two concurrent calls could both
+		// read 'active' before either writes, and (with the old void-
+		// returning markRefreshTokenUsed) both proceed to mint a new token
+		// pair. A thief racing the legitimate client's refresh would slip
+		// straight through reuse detection.
+		//
+		// The fix makes markRefreshTokenUsed report whether IT performed
+		// the active->used transition; a losing call now gets treated
+		// exactly like presenting an already-used token.
+		const { engine, adapter } = buildEngine()
+		const { refreshToken, familyId } = await engine.issue('user-1')
+
+		const [first, second] = await Promise.all([
+			engine.rotate(refreshToken),
+			engine.rotate(refreshToken),
+		])
+
+		const statuses = [first.status, second.status].sort()
+
+		// Exactly one call should have won (success); the other must be
+		// treated as reuse, not ALSO succeed.
+		expect(statuses).toEqual(['reused-token-family-revoked', 'success'])
+
+		// Whichever one "succeeded" must not actually leave a usable
+		// session behind — reuse detection revokes the whole family, so
+		// even the winning call's freshly-minted token must be dead too.
+		const winner = first.status === 'success' ? first : second
+		if (winner.status === 'success') {
+			const followUp = await engine.rotate(winner.refreshToken)
+			expect(followUp.status).toBe('invalid')
+		}
+
+		const familyRecords = [...adapter.refreshTokens.values()].filter(
+			(r) => r.familyId === familyId,
+		)
+		expect(familyRecords).toHaveLength(0)
+	})
+
+	it('a losing race is reported via onSystemError', async () => {
+		const { engine, onSystemError } = buildEngine()
+		const { refreshToken } = await engine.issue('user-1')
+
+		await Promise.all([engine.rotate(refreshToken), engine.rotate(refreshToken)])
+
+		expect(onSystemError).toHaveBeenCalled()
 	})
 })

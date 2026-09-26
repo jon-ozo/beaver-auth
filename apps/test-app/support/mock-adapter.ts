@@ -154,9 +154,17 @@ export class MockAdapter implements AuthRepoAdapter, AuthSessionAdapter {
 		return this.verificationTokens.get(identifier) ?? null
 	}
 
-	async markRefreshTokenUsed(tokenHash: string): Promise<void> {
+	async markRefreshTokenUsed(tokenHash: string): Promise<boolean> {
+		// Synchronous check-and-flip (no `await` between the read and the
+		// write) — this is what makes it atomic even under concurrent async
+		// calls: JS won't preempt mid-synchronous-execution, so once this
+		// runs it always completes before any other call to this method
+		// can interleave, exactly mirroring what a real database's atomic
+		// `UPDATE ... WHERE status='active'` guarantees per-row.
 		const record = this.refreshTokens.get(tokenHash)
-		if (record) record.status = 'used'
+		if (!record || record.status !== 'active') return false
+		record.status = 'used'
+		return true
 	}
 
 	async markUserVerified(id: string): Promise<void> {

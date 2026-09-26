@@ -112,7 +112,7 @@ import {
 	CryptoEngine,
 	ValidationEngine,
 	RateLimiterEngine,
-} from 'beaver-auth'
+} from '@beaver-auth/core'
 ```
 
 Each engine owns a particular area of the authentication system.
@@ -153,7 +153,11 @@ Every major engine is exported from the package.
 You can construct and wire the components yourself:
 
 ```ts
-import { RegistrationEngine, LoginEngine, SessionManager } from 'beaver-auth'
+import {
+	RegistrationEngine,
+	LoginEngine,
+	SessionManager,
+} from '@beaver-auth/core'
 
 const sessions = new SessionManager({
 	adapter,
@@ -192,15 +196,15 @@ For most applications, manually constructing the entire dependency graph is unne
 Beaver-Auth provides:
 
 ```ts
-createBeaverAuth()
+createAuth()
 ```
 
 The factory constructs and wires the authentication system in one call.
 
 ```ts
-import { createBeaverAuth } from 'beaver-auth'
+import { createAuth } from '@beaver-auth/core'
 
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 })
 ```
@@ -235,7 +239,7 @@ The factory follows a consistent architectural rule:
 For example, verification is enabled by providing the `verification` configuration:
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	verification: {
@@ -278,7 +282,7 @@ Some engines depend on other engines.
 For example:
 
 ```text
-                         createBeaverAuth()
+                         createAuth()
                                 │
              ┌──────────────────┼──────────────────┐
              │                  │                  │
@@ -331,7 +335,7 @@ onSystemError
 You can provide a single error handler:
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	onSystemError: (error) => {
@@ -445,7 +449,7 @@ Beaver-Auth therefore supports a `TaskDispatcher`.
 The factory can provide a shared dispatcher:
 
 ```ts
-createBeaverAuth({
+createAuth({
 	adapter,
 
 	dispatcher,
@@ -509,7 +513,7 @@ Rate limiting is another important architectural boundary.
 The factory can construct independent rate limiters:
 
 ```ts
-createBeaverAuth({
+createAuth({
   adapter,
 
   rateLimiters: {
@@ -649,7 +653,7 @@ Putting the pieces together:
                             ▼
                  ┌──────────────────────┐
                  │   Composition Root   │
-                 │ createBeaverAuth()   │
+                 │ createAuth()   │
                  └──────────┬───────────┘
                             │
           ┌─────────────────┼──────────────────┐

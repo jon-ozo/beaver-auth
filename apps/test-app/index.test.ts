@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
-	createBeaverAuth,
+	createAuth,
 	VerificationEngine,
 	PasswordResetEngine,
 	AuthMiddlewareEngine,
@@ -15,10 +15,10 @@ import type {
 const JWT_SECRET = 'a-test-secret-that-is-at-least-32-bytes-long'
 const PASSWORD = 'CorrectHorse9'
 
-describe('createBeaverAuth — minimal config (adapter only)', () => {
+describe('createAuth — minimal config (adapter only)', () => {
 	it('constructs registration, login, and sessions, with everything else undefined/empty', () => {
 		const adapter = new MockAdapter()
-		const auth = createBeaverAuth({ adapter })
+		const auth = createAuth({ adapter })
 
 		expect(auth.registration).toBeDefined()
 		expect(auth.login).toBeDefined()
@@ -31,7 +31,7 @@ describe('createBeaverAuth — minimal config (adapter only)', () => {
 
 	it('an unverified-by-default registration immediately logs in without a pending/unverified step', async () => {
 		const adapter = new MockAdapter()
-		const auth = createBeaverAuth({ adapter })
+		const auth = createAuth({ adapter })
 
 		const regResult = await auth.registration.execute({
 			email: 'user@example.com',
@@ -47,10 +47,10 @@ describe('createBeaverAuth — minimal config (adapter only)', () => {
 	})
 })
 
-describe('createBeaverAuth — the returned bundle is immutable', () => {
+describe('createAuth — the returned bundle is immutable', () => {
 	it('throws when attempting to reassign a top-level property', () => {
 		const adapter = new MockAdapter()
-		const auth = createBeaverAuth({ adapter })
+		const auth = createAuth({ adapter })
 
 		expect(() => {
 			;(auth as any).login = null
@@ -59,7 +59,7 @@ describe('createBeaverAuth — the returned bundle is immutable', () => {
 
 	it('throws when attempting to reassign a nested rateLimiters property', () => {
 		const adapter = new MockAdapter()
-		const auth = createBeaverAuth({
+		const auth = createAuth({
 			adapter,
 			rateLimiters: {
 				login: {
@@ -77,12 +77,12 @@ describe('createBeaverAuth — the returned bundle is immutable', () => {
 	})
 })
 
-describe('createBeaverAuth — verification wiring', () => {
+describe('createAuth — verification wiring', () => {
 	it('shares ONE VerificationEngine/hook configuration between registration and resendVerification', async () => {
 		const adapter = new MockAdapter()
 		const received: VerificationHookPayload[] = []
 
-		const auth = createBeaverAuth({
+		const auth = createAuth({
 			adapter,
 			verification: {
 				hooks: {
@@ -117,7 +117,7 @@ describe('createBeaverAuth — verification wiring', () => {
 	it('registration is pending and login is blocked until verifyEmail completes', async () => {
 		const adapter = new MockAdapter()
 		const received: VerificationHookPayload[] = []
-		const auth = createBeaverAuth({
+		const auth = createAuth({
 			adapter,
 			verification: {
 				hooks: { onVerificationRequired: async (p) => void received.push(p) },
@@ -150,11 +150,11 @@ describe('createBeaverAuth — verification wiring', () => {
 	})
 })
 
-describe('createBeaverAuth — password reset wiring', () => {
+describe('createAuth — password reset wiring', () => {
 	it('bundle.passwordReset is present only when configured, and is fully functional', async () => {
 		const adapter = new MockAdapter()
 		const received: PasswordResetHookPayload[] = []
-		const auth = createBeaverAuth({
+		const auth = createAuth({
 			adapter,
 			passwordReset: {
 				hooks: { onPasswordResetRequested: async (p) => void received.push(p) },
@@ -193,9 +193,9 @@ describe('createBeaverAuth — password reset wiring', () => {
 	})
 })
 
-describe('createBeaverAuth — middleware wiring', () => {
+describe('createAuth — middleware wiring', () => {
 	it('is undefined when not configured', () => {
-		const auth = createBeaverAuth({ adapter: new MockAdapter() })
+		const auth = createAuth({ adapter: new MockAdapter() })
 		expect(auth.middleware).toBeUndefined()
 	})
 
@@ -208,7 +208,7 @@ describe('createBeaverAuth — middleware wiring', () => {
 		// work with. This test proves the wiring is correct end-to-end by
 		// actually validating a real, freshly-issued JWT through it.
 		const adapter = new MockAdapter()
-		const auth = createBeaverAuth({
+		const auth = createAuth({
 			adapter,
 			middleware: { jwtSecret: JWT_SECRET },
 		})
@@ -236,7 +236,7 @@ describe('createBeaverAuth — middleware wiring', () => {
 
 	it('cookieOptions actually reach the middleware (further proof the argument order is correct)', () => {
 		const adapter = new MockAdapter()
-		const auth = createBeaverAuth({
+		const auth = createAuth({
 			adapter,
 			middleware: {
 				jwtSecret: JWT_SECRET,
@@ -252,10 +252,10 @@ describe('createBeaverAuth — middleware wiring', () => {
 	})
 })
 
-describe('createBeaverAuth — rate limiter wiring', () => {
+describe('createAuth — rate limiter wiring', () => {
 	it('constructs only the configured rate limiters, each independently functional', async () => {
 		const adapter = new MockAdapter()
-		const auth = createBeaverAuth({
+		const auth = createAuth({
 			adapter,
 			rateLimiters: {
 				login: {
@@ -278,12 +278,12 @@ describe('createBeaverAuth — rate limiter wiring', () => {
 	})
 })
 
-describe('createBeaverAuth — shared onSystemError', () => {
+describe('createAuth — shared onSystemError', () => {
 	it('a single provided onSystemError is used by registration AND the nested verification engine', async () => {
 		const adapter = new MockAdapter()
 		const onSystemError = vi.fn()
 
-		const auth = createBeaverAuth({
+		const auth = createAuth({
 			adapter,
 			onSystemError,
 			verification: {
@@ -317,11 +317,11 @@ describe('createBeaverAuth — shared onSystemError', () => {
 	})
 })
 
-describe('createBeaverAuth — full realistic end-to-end flow', () => {
+describe('createAuth — full realistic end-to-end flow', () => {
 	it('register → verify → login (jwt) → refresh → logout, all through one bundle', async () => {
 		const adapter = new MockAdapter()
 		const received: VerificationHookPayload[] = []
-		const auth = createBeaverAuth({
+		const auth = createAuth({
 			adapter,
 			verification: {
 				hooks: { onVerificationRequired: async (p) => void received.push(p) },

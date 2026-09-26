@@ -80,23 +80,29 @@ describe('AuthMiddlewareEngine — session (cookie) transport', () => {
 	})
 
 	it('emits a refreshed Set-Cookie only when the session was actually extended', async () => {
-		const adapter = new MockAdapter()
-		const sessions = new SessionManager({ adapter, sessionTimeoutMs: 40 })
-		const middleware = new AuthMiddlewareEngine(sessions, { secret: JWT_SECRET, adapter })
-		const user = adapter.seedUser({ email: 'user@example.com' })
-		const { token } = await sessions.create(user.id)
+		vi.useFakeTimers()
+		try {
+			vi.setSystemTime(0)
+			const adapter = new MockAdapter()
+			const sessions = new SessionManager({ adapter, sessionTimeoutMs: 40 })
+			const middleware = new AuthMiddlewareEngine(sessions, { secret: JWT_SECRET, adapter })
+			const user = adapter.seedUser({ email: 'user@example.com' })
+			const { token } = await sessions.create(user.id)
 
-		// Immediately after creation — well before the halfway mark, no
-		// extension should happen.
-		const early = await middleware.handleRequest(`auth_session=${token}`)
-		expect(early.cookieHeaderToBeSet).toBeNull()
+			// Immediately after creation — well before the halfway mark, no
+			// extension should happen.
+			const early = await middleware.handleRequest(`auth_session=${token}`)
+			expect(early.cookieHeaderToBeSet).toBeNull()
 
-		// Past the halfway mark.
-		await new Promise((r) => setTimeout(r, 25))
-		const late = await middleware.handleRequest(`auth_session=${token}`)
-		expect(late.cookieHeaderToBeSet).not.toBeNull()
-		expect(late.cookieHeaderToBeSet).toContain('auth_session=')
-		expect(late.cookieHeaderToBeSet).not.toContain('auth_session=;') // real token, not blanked
+			// Past the halfway mark (20ms) but before expiry (40ms).
+			vi.setSystemTime(25)
+			const late = await middleware.handleRequest(`auth_session=${token}`)
+			expect(late.cookieHeaderToBeSet).not.toBeNull()
+			expect(late.cookieHeaderToBeSet).toContain('auth_session=')
+			expect(late.cookieHeaderToBeSet).not.toContain('auth_session=;') // real token, not blanked
+		} finally {
+			vi.useRealTimers()
+		}
 	})
 })
 
@@ -294,5 +300,132 @@ describe('AuthMiddlewareEngine.revokeJwt', () => {
 	it('throws when constructed without jwtConfig at all', async () => {
 		const { middleware } = buildMiddleware(false)
 		await expect(middleware.revokeJwt('jti')).rejects.toThrow()
+	})
+})
+
+describe('AuthMiddlewareEngine — fetchUser opt-in (regression: hardcoded user: null)', () => {
+	it('REGRESSION GUARD: without fetchUser configured, a valid JWT still reports valid:true with user:null (not a silent auth failure)', async () => {
+		// The bug reported from real-world usage: handleJwtRequest always
+		// returned user: null, even for a fully valid token, and the
+		// natural consumer check `if (!result.user)` silently rejected
+		// every valid JWT. This documents the (now correctly opt-in)
+		// behavior: without fetchUser, `valid` is the real signal — never
+		// `user`.
+		const { adapter, middleware } = buildMiddleware()
+		const sessions = new SessionManager({ adapter })
+		const login = new LoginEngine({ adapter, sessions })
+		const crypto = await import('@beaver-auth/core').then((m) => new m.CryptoEngine())
+		const passwordHash = await crypto.hashPassword('CorrectHorse9')
+		adapter.seedUser({
+			email: 'no-fetch@example.com',
+			passwordHash,
+			verificationStatus: 'verified',
+		})
+
+		const loginResult = await login.executePasswordStage(
+			{ email: 'no-fetch@example.com', password: 'CorrectHorse9' },
+			JWT_SECRET,
+			undefined,
+			{ sessionType: 'jwt' },
+		)
+		if (loginResult.status !== 'success-jwt') throw new Error('expected success-jwt')
+
+		const result = await middleware.handleJwtRequest(`Bearer ${loginResult.accessToken}`)
+
+		expect(result.valid).toBe(true)
+		expect(result.user).toBeNull()
+		expect(result.payload?.userId).toBeDefined() // identity is available via payload
+	})
+
+	it('with fetchUser configured, a valid JWT populates a real, sanitized user', async () => {
+		const adapter = new MockAdapter()
+		const sessions = new SessionManager({ adapter })
+		const login = new LoginEngine({ adapter, sessions })
+		const crypto = await import('@beaver-auth/core').then((m) => new m.CryptoEngine())
+		const passwordHash = await crypto.hashPassword('CorrectHorse9')
+		const user = adapter.seedUser({
+			email: 'with-fetch@example.com',
+			passwordHash,
+			verificationStatus: 'verified',
+		})
+
+		const middleware = new AuthMiddlewareEngine(sessions, {
+			secret: JWT_SECRET,
+			adapter,
+			fetchUser: async (payload) => adapter.findUserById(payload.userId as string),
+		})
+
+		const loginResult = await login.executePasswordStage(
+			{ email: 'with-fetch@example.com', password: 'CorrectHorse9' },
+			JWT_SECRET,
+			undefined,
+			{ sessionType: 'jwt' },
+		)
+		if (loginResult.status !== 'success-jwt') throw new Error('expected success-jwt')
+
+		const result = await middleware.handleJwtRequest(`Bearer ${loginResult.accessToken}`)
+
+		expect(result.valid).toBe(true)
+		expect(result.user?.id).toBe(user.id)
+		expect(result.user).not.toHaveProperty('passwordHash')
+		expect(result.user).not.toHaveProperty('mfaSecret')
+	})
+
+	it('fails closed (valid:false) rather than valid:true+user:null when fetchUser returns null', async () => {
+		const adapter = new MockAdapter()
+		const sessions = new SessionManager({ adapter })
+		const login = new LoginEngine({ adapter, sessions })
+		const crypto = await import('@beaver-auth/core').then((m) => new m.CryptoEngine())
+		const passwordHash = await crypto.hashPassword('CorrectHorse9')
+		adapter.seedUser({
+			email: 'deleted-user@example.com',
+			passwordHash,
+			verificationStatus: 'verified',
+		})
+
+		const middleware = new AuthMiddlewareEngine(sessions, {
+			secret: JWT_SECRET,
+			adapter,
+			fetchUser: async () => null, // simulates a user deleted since token issuance
+		})
+
+		const loginResult = await login.executePasswordStage(
+			{ email: 'deleted-user@example.com', password: 'CorrectHorse9' },
+			JWT_SECRET,
+			undefined,
+			{ sessionType: 'jwt' },
+		)
+		if (loginResult.status !== 'success-jwt') throw new Error('expected success-jwt')
+
+		const result = await middleware.handleJwtRequest(`Bearer ${loginResult.accessToken}`)
+
+		expect(result.valid).toBe(false)
+		expect(result.user).toBeNull()
+	})
+})
+
+describe('AuthMiddlewareEngine — session user is sanitized (regression: leaked User)', () => {
+	it('REGRESSION GUARD: handleRequest never exposes passwordHash or mfaSecret on the session user, even though the underlying record has them', async () => {
+		// This was the more severe instance of the bug: MiddlewareResult.user
+		// carried the FULL User record — including the live, unhashed
+		// mfaSecret — on every authenticated request via the cookie path,
+		// not just once at login. A naive `res.json({ user: req.user })`
+		// would ship a usable TOTP secret straight to the client.
+		const adapter = new MockAdapter()
+		const sessions = new SessionManager({ adapter })
+		const middleware = new AuthMiddlewareEngine(sessions, { secret: JWT_SECRET, adapter })
+		const user = adapter.seedUser({
+			email: 'session-user@example.com',
+			mfaEnabled: true,
+			mfaSecret: 'SUPERSECRETTOTPKEY',
+		})
+		const { token } = await sessions.create(user.id)
+
+		const result = await middleware.handleRequest(`auth_session=${token}`)
+
+		expect(result.user?.id).toBe(user.id)
+		expect(result.user).not.toHaveProperty('passwordHash')
+		expect(result.user).not.toHaveProperty('mfaSecret')
+		expect(JSON.stringify(result.user)).not.toContain('SUPERSECRETTOTPKEY')
 	})
 })

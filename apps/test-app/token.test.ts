@@ -69,19 +69,25 @@ describe('TokenEngine.create / consume (opaque verification tokens)', () => {
 	})
 
 	it('rejects (and consumes) an expired token', async () => {
-		const adapter = new MockAdapter()
-		const tokens = new TokenEngine({ adapter })
+		vi.useFakeTimers()
+		try {
+			vi.setSystemTime(0)
+			const adapter = new MockAdapter()
+			const tokens = new TokenEngine({ adapter })
 
-		const { token } = await tokens.create('user@example.com', 'email-verification', 10)
-		await new Promise((r) => setTimeout(r, 30))
+			const { token } = await tokens.create('user@example.com', 'email-verification', 10)
+			vi.setSystemTime(30)
 
-		const result = await tokens.consume('user@example.com', token, 'email-verification')
-		expect(result).toBe(false)
+			const result = await tokens.consume('user@example.com', token, 'email-verification')
+			expect(result).toBe(false)
 
-		// "Consumed but dead" — the record should be gone even though it
-		// failed, so a subsequent legitimate request can't reuse the slot
-		// weirdly and the identifier is clean for a fresh token.
-		expect(adapter.verificationTokens.size).toBe(0)
+			// "Consumed but dead" — the record should be gone even though it
+			// failed, so a subsequent legitimate request can't reuse the slot
+			// weirdly and the identifier is clean for a fresh token.
+			expect(adapter.verificationTokens.size).toBe(0)
+		} finally {
+			vi.useRealTimers()
+		}
 	})
 })
 

@@ -1,11 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { SessionManager } from '@beaver-auth/core'
 import { MockAdapter } from './support/mock-adapter.js'
 
-function buildSessions(opts?: {
-	sessionTimeoutMs?: number
-	mfaChallengeTimeoutMs?: number
-}) {
+function buildSessions(opts?: { sessionTimeoutMs?: number; mfaChallengeTimeoutMs?: number }) {
 	const adapter = new MockAdapter()
 	const sessions = new SessionManager({
 		adapter,
@@ -57,34 +54,45 @@ describe('SessionManager.create / validate / invalidate', () => {
 	})
 
 	it('returns null and deletes the record for an expired session', async () => {
-		const { adapter, sessions } = buildSessions({ sessionTimeoutMs: 10 })
-		const user = adapter.seedUser({ email: 'user@example.com' })
-		const { token } = await sessions.create(user.id)
+		vi.useFakeTimers()
+		try {
+			vi.setSystemTime(0)
+			const { adapter, sessions } = buildSessions({ sessionTimeoutMs: 10 })
+			const user = adapter.seedUser({ email: 'user@example.com' })
+			const { token } = await sessions.create(user.id)
 
-		await new Promise((r) => setTimeout(r, 30))
+			vi.setSystemTime(30)
 
-		const result = await sessions.validate(token)
-		expect(result).toBeNull()
-		expect(adapter.sessions.size).toBe(0)
+			const result = await sessions.validate(token)
+			expect(result).toBeNull()
+			expect(adapter.sessions.size).toBe(0)
+		} finally {
+			vi.useRealTimers()
+		}
 	})
 
 	it('extends expiry once past the halfway mark, and reports expiryExtended', async () => {
-		const { adapter, sessions } = buildSessions({ sessionTimeoutMs: 40 })
-		const user = adapter.seedUser({ email: 'user@example.com' })
-		const { token } = await sessions.create(user.id)
+		vi.useFakeTimers()
+		try {
+			vi.setSystemTime(0)
+			const { adapter, sessions } = buildSessions({ sessionTimeoutMs: 40 })
+			const user = adapter.seedUser({ email: 'user@example.com' })
+			const { token } = await sessions.create(user.id)
 
-		// Past the halfway point (20ms) but not yet expired (40ms).
-		await new Promise((r) => setTimeout(r, 22))
+			// Past the halfway point (20ms) but not yet expired (40ms).
+			vi.setSystemTime(25)
 
-		const result = await sessions.validate(token)
+			const result = await sessions.validate(token)
+			expect(result).not.toBeNull()
+			expect(result!.expiryExtended).toBe(true)
 
-		expect(result).not.toBeNull()
-		expect(result!.expiryExtended).toBe(true)
-
-		// A second, immediate validate should NOT extend again — plenty of
-		// time remains now.
-		const second = await sessions.validate(token)
-		expect(second!.expiryExtended).toBe(false)
+			// A second, immediate validate should NOT extend again — plenty of
+			// time remains now.
+			const second = await sessions.validate(token)
+			expect(second!.expiryExtended).toBe(false)
+		} finally {
+			vi.useRealTimers()
+		}
 	})
 
 	it('does not extend expiry before the halfway mark', async () => {
@@ -141,18 +149,24 @@ describe('SessionManager MFA challenge tokens', () => {
 	})
 
 	it('reports isExpired: true for an expired (but not yet purged) challenge token', async () => {
-		const { adapter, sessions } = buildSessions({ mfaChallengeTimeoutMs: 10 })
-		const user = adapter.seedUser({ email: 'user@example.com' })
-		const rawToken = await sessions.createTemporaryMfaToken(user.id)
+		vi.useFakeTimers()
+		try {
+			vi.setSystemTime(0)
+			const { adapter, sessions } = buildSessions({ mfaChallengeTimeoutMs: 10 })
+			const user = adapter.seedUser({ email: 'user@example.com' })
+			const rawToken = await sessions.createTemporaryMfaToken(user.id)
 
-		await new Promise((r) => setTimeout(r, 30))
+			vi.setSystemTime(30)
 
-		const verified = await sessions.verifyTemporaryMfaToken(rawToken)
-		expect(verified).toEqual({ userId: user.id, isExpired: true })
-		// verifyTemporaryMfaToken reports expiry but does not itself delete —
-		// the record should still be present until explicitly
-		// revoked/purged.
-		expect(adapter.mfaChallengeTokens.size).toBe(1)
+			const verified = await sessions.verifyTemporaryMfaToken(rawToken)
+			expect(verified).toEqual({ userId: user.id, isExpired: true })
+			// verifyTemporaryMfaToken reports expiry but does not itself delete —
+			// the record should still be present until explicitly
+			// revoked/purged.
+			expect(adapter.mfaChallengeTokens.size).toBe(1)
+		} finally {
+			vi.useRealTimers()
+		}
 	})
 
 	it('returns null for a nonexistent challenge token', async () => {

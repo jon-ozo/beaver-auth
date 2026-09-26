@@ -1,9 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-	RateLimiterEngine,
-	MemoryStore,
-	checkAuthRateLimit,
-} from '@beaver-auth/core'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { RateLimiterEngine, MemoryStore, checkAuthRateLimit } from '@beaver-auth/core'
 
 describe('RateLimiterEngine — token bucket', () => {
 	afterEach(() => {
@@ -268,11 +264,7 @@ describe('MemoryStore', () => {
 		)
 
 		await Promise.all(updates)
-		const final = await store.update<number>(
-			'counter',
-			(current) => current ?? 0,
-			5000,
-		)
+		const final = await store.update<number>('counter', (current) => current ?? 0, 5000)
 
 		expect(final).toBe(20) // all 20 concurrent increments landed, none lost
 		store.destroy()

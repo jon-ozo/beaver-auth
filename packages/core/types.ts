@@ -11,6 +11,26 @@ export interface User {
 	lastUsedTotpStep?: number
 }
 
+/**
+ * The User shape actually safe to hand back to a consumer. Omits
+ * passwordHash (a scrypt hash — not plaintext, but still no reason to leave
+ * a consumer's own logging/serialization as the only thing standing between
+ * it and an accidental leak) and mfaSecret (a live TOTP secret — this one
+ * is NOT hashed, since it must be usable to verify future codes, so
+ * exposing it is equivalent to leaking a symmetric key outright).
+ * lastUsedTotpStep is dropped too — an internal replay-tracking counter
+ * with no legitimate use outside the package.
+ *
+ * Every result type that carries a user (LoginResult, MiddlewareResult,
+ * JwtMiddlewareResult) uses this, never the raw User, so a consumer can
+ * safely log or serialize it without independently having to know which
+ * fields are safe.
+ */
+export type PublicUser = Omit<
+	User,
+	'passwordHash' | 'mfaSecret' | 'lastUsedTotpStep'
+>
+
 export interface Session {
 	tokenHash: string
 	userId: string
@@ -20,10 +40,15 @@ export interface Session {
 }
 
 export type LoginResult =
-	| { status: 'success-session'; user: User; session: Session; token: string }
+	| {
+			status: 'success-session'
+			user: PublicUser
+			session: Session
+			token: string
+	  }
 	| {
 			status: 'success-jwt'
-			user: User
+			user: PublicUser
 			accessToken: string
 			refreshToken: string
 			familyId: string
@@ -135,7 +160,18 @@ export interface AuthRepoAdapter {
 	} | null>
 	findUserById(id: string): Promise<User | null>
 	getVerificationToken(identifier: string): Promise<VerificationToken | null>
-	markRefreshTokenUsed(tokenHash: string): Promise<void>
+	/**
+	 * Flips the token from 'active' to 'used'. MUST be implemented as an
+	 * atomic conditional update (e.g. `UPDATE ... SET status='used' WHERE
+	 * token_hash=? AND status='active'`) and return true only if THIS call
+	 * performed the transition — false if the row was already 'used' (by a
+	 * concurrent call, or a genuine replay) or doesn't exist. Without this,
+	 * two concurrent rotate() calls on the same token can both read
+	 * status='active' before either writes, and both succeed — silently
+	 * defeating reuse detection under a real race (e.g. an attacker racing
+	 * the legitimate client with a stolen token).
+	 */
+	markRefreshTokenUsed(tokenHash: string): Promise<boolean>
 	// Flips a user from 'pending' to 'verified'. Separate from updateUser
 	// rather than folded into its generic field-patch shape, since this is a
 	// specific, security-relevant state transition (drives the enumeration-

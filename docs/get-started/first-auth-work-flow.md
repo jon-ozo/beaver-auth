@@ -84,14 +84,14 @@ There are two ways to work with Beaver-Auth.
 
 ### Factory composition
 
-For most applications, start with `createBeaverAuth()`.
+For most applications, start with `createAuth()`.
 
 The factory constructs and wires the engines that belong together:
 
 ```ts
-import { createBeaverAuth } from 'beaver-auth'
+import { createAuth } from '@beaver-auth/core'
 
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	onSystemError(error) {
@@ -118,7 +118,7 @@ Optional capabilities are enabled by configuration.
 For example, verification is enabled by providing the `verification` configuration:
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	verification: {
@@ -149,7 +149,7 @@ import {
 	LoginEngine,
 	SessionManager,
 	VerificationEngine,
-} from 'beaver-auth'
+} from '@beaver-auth/core'
 ```
 
 You can therefore construct the authentication system yourself when you need more explicit control over the dependency graph.
@@ -182,7 +182,7 @@ The two approaches are therefore:
 
 ```text
 Factory
-createBeaverAuth()
+createAuth()
        │
        └── Beaver-Auth wires the graph
 
@@ -617,7 +617,7 @@ Your application must also establish whether subsequent requests are authenticat
 When middleware is enabled through the factory:
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	middleware: {
@@ -662,7 +662,7 @@ Rate limiting is also independently configurable.
 For example:
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	rateLimiters: {
@@ -704,7 +704,7 @@ Authentication failures should not disappear into a console.
 Beaver-Auth allows you to provide a shared `onSystemError` handler:
 
 ```ts
-const auth = createBeaverAuth({
+const auth = createAuth({
 	adapter,
 
 	onSystemError(error) {
@@ -748,7 +748,7 @@ Putting everything together:
                          │   Your Application   │
                          └──────────┬───────────┘
                                     │
-                              createBeaverAuth
+                              createAuth
                                     │
                                     ▼
                          ┌──────────────────────┐

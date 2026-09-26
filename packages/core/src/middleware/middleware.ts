@@ -3,7 +3,8 @@
 
 import { SessionManager } from '../session/session.js'
 import { TokenEngine } from '../internal/token.js'
-import { AuthRepoAdapter, User, Session } from '../../types.js'
+import { AuthRepoAdapter, User, Session, PublicUser } from '../../types.js'
+import { toPublicUser } from '../internal/public-user.js'
 
 export interface CookieOptions {
 	name?: string
@@ -16,13 +17,13 @@ export interface CookieOptions {
 
 export interface MiddlewareResult {
 	session: Session | null
-	user: User | null
+	user: PublicUser | null
 	cookieHeaderToBeSet: string | null
 }
 
 export interface JwtMiddlewareResult {
 	valid: boolean
-	user: User | null
+	user: PublicUser | null
 	payload: Record<string, unknown> | null
 	reason?: string
 }
@@ -41,6 +42,24 @@ export interface JwtMiddlewareConfig {
 	 * @default undefined (no revocation check performed)
 	 */
 	isJwtRevoked?: (jti: string) => Promise<boolean>
+
+	/**
+	 * Optional user lookup, called with the verified JWT payload. If
+	 * omitted, `handleJwtRequest`'s result always has `user: null` — the
+	 * payload (email/userId/role, whatever LoginEngine put there at
+	 * issuance) is all you get, via `result.payload`, and it reflects the
+	 * user's state AT LOGIN TIME, not necessarily right now. Supply this if
+	 * you need a live, current user record on every JWT-authenticated
+	 * request (e.g. role changes to take effect immediately) — be aware it
+	 * adds a database read per request, the same stateless/fresh trade-off
+	 * as isJwtRevoked. If this returns null (e.g. the user was deleted
+	 * since the token was issued), the token is treated as invalid, not as
+	 * "valid but userless" — a signature can be valid while the account it
+	 * refers to no longer exists, and that should never look like a
+	 * successful auth.
+	 * @default undefined (user is always null; use payload for identity)
+	 */
+	fetchUser?: (payload: Record<string, unknown>) => Promise<User | null>
 }
 
 export class AuthMiddlewareEngine {
@@ -50,6 +69,7 @@ export class AuthMiddlewareEngine {
 	private jwtSecret?: string
 	private adapter?: AuthRepoAdapter
 	private isJwtRevoked?: (jti: string) => Promise<boolean>
+	private fetchUser?: (payload: Record<string, unknown>) => Promise<User | null>
 
 	constructor(
 		private sessions: SessionManager,
@@ -72,6 +92,7 @@ export class AuthMiddlewareEngine {
 		this.jwtSecret = jwtConfig?.secret
 		this.adapter = jwtConfig?.adapter
 		this.isJwtRevoked = jwtConfig?.isJwtRevoked
+		this.fetchUser = jwtConfig?.fetchUser
 	}
 
 	// ---------------------------------------------------------------------
@@ -79,7 +100,7 @@ export class AuthMiddlewareEngine {
 	// ---------------------------------------------------------------------
 
 	/**
-	 * Parses raw cookie headers with zero external dependencies.
+	 * Parses raw cookie headers
 	 */
 	public async handleRequest(
 		rawCookieHeader: string | null,
@@ -120,7 +141,7 @@ export class AuthMiddlewareEngine {
 
 		return {
 			session: validation.session,
-			user: validation.user,
+			user: toPublicUser(validation.user),
 			cookieHeaderToBeSet,
 		}
 	}
@@ -232,12 +253,38 @@ export class AuthMiddlewareEngine {
 		}
 
 		// The JWT payload carries whatever LoginEngine put there at issuance
-		// (email, userId, role) — it is NOT re-fetched from the database, so
-		// it reflects the user's state at login time, not necessarily right
-		// now. If your app needs guaranteed-fresh user data (e.g. role
-		// changes to take effect immediately), look the user up via
-		// payload.userId instead of trusting the payload directly for
-		// anything authorization-sensitive.
+		// (email, userId, role) — it is NOT re-fetched from the database by
+		// default, so it reflects the user's state at login time, not
+		// necessarily right now. `user` below is populated ONLY if you
+		// configured `fetchUser` in JwtMiddlewareConfig; otherwise it is
+		// always null here — use `payload` for identity in that case, not
+		// `user`. A common mistake is writing `if (!result.user)` as the
+		// auth check: without `fetchUser` configured, that rejects every
+		// valid token. Check `result.valid` instead.
+		if (this.fetchUser) {
+			const fetchedUser = await this.fetchUser(result.payload)
+
+			if (!fetchedUser) {
+				// A valid signature doesn't mean the account it names still
+				// exists (e.g. deleted since the token was issued). Treat
+				// this as an invalid token, never as "valid with no user" —
+				// that combination is exactly the confusing state this
+				// whole hook exists to avoid.
+				return {
+					valid: false,
+					user: null,
+					payload: null,
+					reason: 'User referenced by this token no longer exists.',
+				}
+			}
+
+			return {
+				valid: true,
+				user: toPublicUser(fetchedUser),
+				payload: result.payload,
+			}
+		}
+
 		return {
 			valid: true,
 			user: null,

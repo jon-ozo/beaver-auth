@@ -1,10 +1,10 @@
 {
 	"name": "Beaver Auth Monorepo",
-	"version": "1.0.1",
+	"version": "0.1.4",
 	"private": true,
 	"description": "Monorepo for the Beaver Auth ecosystem",
 	"scripts": {
-		"build": "pnpm --filter \"@beaver-auth/*\" run build",
+		"build": "pnpm --filter \"@beaver-auth/*\" run build && node scripts/build-smoke-test.mjs",
 		"dev": "pnpm --filter \"@beaver-auth/*\" --parallel run dev",
 		"test": "vitest run",
 		"test:watch": "vitest"
@@ -12,7 +12,7 @@
 	"keywords": [],
 	"author": "John Ozoemena",
 	"license": "Apache-2.0",
-	"packageManager": "pnpm@11.18.0",
+	"packageManager": "pnpm@12.6.0",
 	"devDependencies": {
 		"vitest": "^1.6.0"
 	}

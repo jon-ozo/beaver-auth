@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RegistrationEngine, VerificationEngine } from '@beaver-auth/core'
 import { MockAdapter } from './support/mock-adapter.js'
 import { SyncTaskDispatcher } from './support/sync-dispatcher.js'
@@ -15,7 +15,7 @@ function buildEngines(opts?: {
 	const receivedHooks: VerificationHookPayload[] = []
 
 	const verification =
-		(opts?.withVerification ?? true)
+		opts?.withVerification ?? true
 			? new VerificationEngine({
 					adapter,
 					hooks: {
@@ -36,14 +36,7 @@ function buildEngines(opts?: {
 		responseFloorMs: opts?.responseFloorMs ?? 0,
 	})
 
-	return {
-		adapter,
-		dispatcher,
-		onSystemError,
-		verification,
-		registration,
-		receivedHooks,
-	}
+	return { adapter, dispatcher, onSystemError, verification, registration, receivedHooks }
 }
 
 const VALID_INPUT = { email: 'new-user@example.com', password: 'CorrectHorse9' }
@@ -51,8 +44,7 @@ const VALID_INPUT = { email: 'new-user@example.com', password: 'CorrectHorse9' }
 describe('RegistrationEngine', () => {
 	describe('happy path with verification configured', () => {
 		it('creates a pending user and dispatches a verification hook with a consumable token', async () => {
-			const { registration, adapter, receivedHooks, verification } =
-				buildEngines()
+			const { registration, adapter, receivedHooks, verification } = buildEngines()
 
 			const result = await registration.execute(VALID_INPUT)
 
@@ -93,9 +85,7 @@ describe('RegistrationEngine', () => {
 				password: 'CorrectHorse9',
 			})
 
-			expect(
-				await adapter.findUserByEmail('new-user@example.com'),
-			).not.toBeNull()
+			expect(await adapter.findUserByEmail('new-user@example.com')).not.toBeNull()
 			expect(await adapter.findUserByEmail('New-User@Example.com')).toBeNull()
 		})
 	})
@@ -134,9 +124,7 @@ describe('RegistrationEngine', () => {
 		})
 
 		it('returns the SAME response shape for an existing email as for a new one, with verification disabled', async () => {
-			const { registration, adapter } = buildEngines({
-				withVerification: false,
-			})
+			const { registration, adapter } = buildEngines({ withVerification: false })
 			adapter.seedUser({ email: 'existing@example.com', passwordHash: 'x' })
 
 			const existingResult = await registration.execute({
@@ -220,10 +208,7 @@ describe('RegistrationEngine', () => {
 		it('does NOT create a user when validation fails', async () => {
 			const { registration, adapter } = buildEngines()
 
-			await registration.execute({
-				email: 'not-an-email',
-				password: 'CorrectHorse9',
-			})
+			await registration.execute({ email: 'not-an-email', password: 'CorrectHorse9' })
 
 			expect(await adapter.findUserByEmail('not-an-email')).toBeNull()
 		})
@@ -247,10 +232,7 @@ describe('RegistrationEngine', () => {
 			const { registration } = buildEngines({ responseFloorMs: 200 })
 
 			const start = Date.now()
-			await registration.execute({
-				email: 'not-an-email',
-				password: 'CorrectHorse9',
-			})
+			await registration.execute({ email: 'not-an-email', password: 'CorrectHorse9' })
 			const elapsed = Date.now() - start
 
 			// Documents the current implementation: the validation try/catch in
@@ -323,15 +305,9 @@ describe('RegistrationEngine', () => {
 			const { purgedCount } = await registration.purgeExpiredRegistrations()
 
 			expect(purgedCount).toBe(1)
-			expect(
-				await adapter.findUserByEmail('old-pending@example.com'),
-			).toBeNull()
-			expect(
-				await adapter.findUserByEmail('recent-pending@example.com'),
-			).not.toBeNull()
-			expect(
-				await adapter.findUserByEmail('old-verified@example.com'),
-			).not.toBeNull()
+			expect(await adapter.findUserByEmail('old-pending@example.com')).toBeNull()
+			expect(await adapter.findUserByEmail('recent-pending@example.com')).not.toBeNull()
+			expect(await adapter.findUserByEmail('old-verified@example.com')).not.toBeNull()
 		})
 	})
 })

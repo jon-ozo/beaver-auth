@@ -1,4 +1,4 @@
-import { createBeaverAuth } from '@beaver-auth/core'
+import { createAuth } from '@beaver-auth/core'
 
 const memoryDb = { users: new Map() }
 
@@ -13,7 +13,7 @@ const mockAdapter = {
 
 async function runSimulation() {
 	console.log('🚀 Testing Unified Secure Login Processing Engine...')
-	const auth = createBeaverAuth({ adapter: mockAdapter })
+	const auth = createAuth({ adapter: mockAdapter })
 
 	// Seed a standard password-secured test user context profile row
 	const secureHash = auth.crypto.hashPassword('correctPassword123!')
