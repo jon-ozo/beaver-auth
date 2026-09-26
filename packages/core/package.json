@@ -2,6 +2,11 @@
 	"name": "@beaver-auth/core",
 	"version": "0.1.4",
 	"description": "Lightweight, type-safe authorization and authentication core engine.",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/jon-ozo/beaver-auth/",
+		"directory": "packages/core"
+	},
 	"type": "module",
 	"main": "./dist/index.cjs",
 	"module": "./dist/index.js",
